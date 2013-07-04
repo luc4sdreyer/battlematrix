@@ -1,0 +1,120 @@
+Overview
+
+
+The objective of the challenge is for players to defeat their opponents on the field of battle. In order to do this, they’ll need to develop an artificial intelligence capable of destroying their opponent’s tanks and capturing their base independently of any interaction from the player.
+
+The game is comprised of a two-dimensional board made up of blocks and spaces upon which the two players will battle. Each player is equipped with two tanks and a base. The blocks prevent the players’ tanks and bullets from passing through them - not without damage to the block however as player may destroy a block by using bullets fired by their tanks.
+
+The game ends when a player destroys their opponent’s base. If both players’ bases are destroyed or their tanks are all destroyed before any base is destroyed, then the game results in a draw.
+
+Below is an example of a typical game board:
+
+
+ 
+
+ XXX and YYY represent players 1 and 2 respectively.
+$$$ represents a player' s base.
+### represents a block.
+* represents a bullet.                             
+ 
+
+All queries relating to the Specification, Terms and Condidtions, Entry Process and Rules can be directed to challenge@entelect.co.za
+
+
+Specifications
+
+Environment and Entry Structure
+Your program must be able to be compiled in either a Java 7 or a .NET 4 environment.
+A Windows environment will be used as the server operating system for the challenge.
+Your entry must contain a source folder as well as a start.bat file that launches the program.
+Make sure you include a compile.bat file, we’ll use this to automatically compile your program.
+Java programs must be compiled using maven and .NET projects must be compiled using msbuild.
+The size of the entire entry may not exceed 5mb.
+
+Player Interaction
+The players’ AIs will interact with the game via SOAP webservices. The webservices will be provide the following functionality:
+
+Login functionality. Players will issue a webservice command to login which responds with the board once complete. Once this has returned the game has started. Any attempts to login after the game has begun results in an immediate loss.
+Game status reporting. Players may issue a command to query the status of the game which includes the position of both players’ bases, the position of a player’s tanks and bullets and their recent events such as the destruction of units and mapping of blocks. Once queried, the events are cleared from the list.
+Perform Actions. Players may issue a command allowing them to specify a particular tank and the action they wish to be performed by the tank. The tank’s action is then set to the action specified by the player.
+
+A copy of the wsdl used to for this challenge can be found here.
+
+Game Lifecycle and Constraints
+The game commences as soon as two players have been logged in.
+The game begins with the players tanks and bases distributed symmetrically across one of eight boards.
+Tanks have the following attributes:
+A position which denotes their position as (x,y) coordinate pairs on the board.
+A direction which determines the direction the tank is facing and hence where bullets are fired.
+An action which determines which of six possible actions a tank may take. The available actions are:
+UP - Move up one grid cell.
+DOWN - Move down one grid cell.
+LEFT – Move left one grid cell.
+Right – Move right one grid cell.
+FIRE – Fire bullets in the specified direction.
+NONE- Perform no action.
+Bullets are destroyed once they collide with another object and in addition will destroy the following
+Bullets may in addition collide with each other which results in both bullets being destroyed
+A row of five blocks in the direction consistent with how the bullets struck the blocks.
+Any tank, including tanks belonging to the player that fired the bullets (friendly fire).
+Any base, friendly or enemy.
+Other bullets, which results in both bullets being destroyed.
+The game proceeds in “ticks” which are a period of three seconds. During each tick the following events take place:
+Bullets that have been fired are moved and collisions are checked for.
+Bullets and tanks are moved and collision are checked for.
+All tanks in the firing state are fired and their bullets are added to the field.
+Collisions are checked for.
+The game proceeds in “ticks” which are a period of three seconds. During each tick the following events take place:
+Bullets that have been fired are moved and collisions are checked for.
+Bullets and tanks are moved and collision are checked for.
+All tanks in the firing state are fired and their bullets are added to the field.
+Collisions are checked for.
+The game proceeds until an end state is reached. End states are one of the following:
+A player’s base has been destroyed.
+Both players have lost all their tanks.
+A player violates the rules and loses.
+A base may be destroyed by collision with either bullets or tanks.
+
+Quick-start Guide
+This quick reference guide is intended to get you up and running with the project setup for the challenge, whether you choose to implement your solution in Java or .NET.
+
+
+Java
+If you plan to develop your entry in Java then you are also required to provide batch files to build your program using maven and to run your project. The basic outline of these batch files is presented here.
+
+
+Maven
+java -cp target/battlematrix-1.0-SNAPSHOT.jar za.co.entelect.competition.App
+
+You will need a copy of Maven.
+This is a free piece of software with a South African mirror that can be located here. 
+Install it as per the included README.txt file – that is, extract it and then add the /bin folder from the extracted directory to your Windows path and make sure your JAVA_HOME variable is set to the root of your JDK (eg, C:\Program Files\Java\jdk1.7.0_05)
+You can verify that it is working by running mvn --version from your command line – this should print out something similar to:
+Apache Maven 3.0.5 (r1232337; 2012-01-17 10:44:56+0200)
+Maven home: C:\maven\bin\..
+Java version: 1.7.0_05, vendor: Oracle Corporation
+Java home: C:\Program Files\Java\jdk1.7.0_05\jre
+Default locale: en_ZA, platform encoding: Cp1252
+OS name: "windows 7", version: "6.1", arch: "amd64", family: "windows"
+
+
+To generate a basic project structure, such as a “Hello World” structure, run
+mvn archetype:generate -DgroupId=za.co.entelect.competition 
+-DartifactId=lightbike -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+
+This will generate the standard project structure for a “Hello World” program with the name of battlematrix for you. This can then be built by changing into the folder corresponding to the artifact ID and running mvn package. The contents of your compile.bat file for the purposes of this project would also be mvn package.
+To run this example program, you would then enter:
+ java -cp target/battlematrix-1.0-SNAPSHOT.jar za.co.entelect.competition.App
+
+.NET
+If you plan to develop your entry using a .NET language then you are also required to provide batch files to compile and run your project. However, most of the .NET generation is more easily done via graphical utilities such as Visual Studio Express which can be downloaded for free. Once it is installed, follow the wizard in order to create your project. All that remains for your entry is to create the batch files that will compile and run your project.
+
+For this example, take the name of the .proj file that is generated by Visual Studio to be Entelect.proj. In order to build this project, the compile.bat file should contain the following
+
+MSBuild.exe Entelect.proj
+
+As long as this is called from within a Visual Studio command prompt, this will build your project. The created files are placed inside the bin folder. The start.bat file should then contain, depending on the chosen name of your application,
+
+<path to your application in the bin folder>.exe
+
+This will run your program.

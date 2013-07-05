@@ -34,7 +34,7 @@ The size of the entire entry may not exceed 5mb.
 Player Interaction
 The players’ AIs will interact with the game via SOAP webservices. The webservices will be provide the following functionality:
 
-Login functionality. Players will issue a webservice command to login which responds with the board once complete. Once this has returned the game has started. Any attempts to login after the game has begun results in an immediate loss.
+Login functionality. Players will issue a webservice command to login which responds with the board and the initial board state (position of tanks and bases) once complete. Once this has returned the game has started. Any attempts to login after the game has begun results in an immediate loss.
 Game status reporting. Players may issue a command to query the status of the game which includes the position of both players’ bases, the position of a player’s tanks and bullets and their recent events such as the destruction of units and mapping of blocks. Once queried, the events are cleared from the list.
 Perform Actions. Players may issue a command allowing them to specify a particular tank and the action they wish to be performed by the tank. The tank’s action is then set to the action specified by the player.
 
@@ -53,8 +53,7 @@ LEFT – Move left one grid cell.
 Right – Move right one grid cell.
 FIRE – Fire bullets in the specified direction.
 NONE- Perform no action.
-Bullets are destroyed once they collide with another object and in addition will destroy the following
-Bullets may in addition collide with each other which results in both bullets being destroyed
+Bullets are destroyed once they collide with another object and in addition will destroy the following:
 A row of five blocks in the direction consistent with how the bullets struck the blocks.
 Any tank, including tanks belonging to the player that fired the bullets (friendly fire).
 Any base, friendly or enemy.
@@ -64,15 +63,6 @@ Bullets that have been fired are moved and collisions are checked for.
 Bullets and tanks are moved and collision are checked for.
 All tanks in the firing state are fired and their bullets are added to the field.
 Collisions are checked for.
-The game proceeds in “ticks” which are a period of three seconds. During each tick the following events take place:
-Bullets that have been fired are moved and collisions are checked for.
-Bullets and tanks are moved and collision are checked for.
-All tanks in the firing state are fired and their bullets are added to the field.
-Collisions are checked for.
-The game proceeds until an end state is reached. End states are one of the following:
-A player’s base has been destroyed.
-Both players have lost all their tanks.
-A player violates the rules and loses.
 A base may be destroyed by collision with either bullets or tanks.
 
 Quick-start Guide
@@ -100,7 +90,7 @@ OS name: "windows 7", version: "6.1", arch: "amd64", family: "windows"
 
 To generate a basic project structure, such as a “Hello World” structure, run
 mvn archetype:generate -DgroupId=za.co.entelect.competition 
--DartifactId=lightbike -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+-DartifactId=battlematrix -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
 
 This will generate the standard project structure for a “Hello World” program with the name of battlematrix for you. This can then be built by changing into the folder corresponding to the artifact ID and running mvn package. The contents of your compile.bat file for the purposes of this project would also be mvn package.
 To run this example program, you would then enter:

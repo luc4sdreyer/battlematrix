@@ -74,8 +74,8 @@ public class App
 			}
 			
 			try {
-				service.setAction(0, Action.NONE);
-				service.setAction(1, Action.NONE);
+				service.setAction(0, za.co.entelect.challenge.Action.NONE);
+				service.setAction(1, za.co.entelect.challenge.Action.NONE);
 			} catch (EndOfGameException e) {
 				e.printStackTrace();
 			} catch (RemoteException e) {

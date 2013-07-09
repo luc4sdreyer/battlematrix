@@ -12,9 +12,9 @@ Below is an example of a typical game board:
 
  
 
- XXX and YYY represent players 1 and 2 respectively.
-$$$ represents a player' s base.
-### represents a block.
+ XXX and YYY represent the tanks belonging players 1 and 2 respectively.  Tank size is 5 x 5 units.
+$$$ represents a player' s base. A base takes up 1 unit.
+### represents a block. A block takes up 1 unit.
 * represents a bullet.                             
  
 
@@ -26,7 +26,7 @@ Specifications
 Environment and Entry Structure
 Your program must be able to be compiled in either a Java 7 or a .NET 4 environment.
 A Windows environment will be used as the server operating system for the challenge.
-Your entry must contain a source folder as well as a start.bat file that launches the program.
+Your entry must contain a source folder as well as a start.bat file that launches the program. The start.bat file should in addition accept one parameter, which specifies the endpoint that your client should connect to.
 Make sure you include a compile.bat file, we’ll use this to automatically compile your program.
 Java programs must be compiled using maven and .NET projects must be compiled using msbuild.
 The size of the entire entry may not exceed 5mb.
@@ -34,9 +34,9 @@ The size of the entire entry may not exceed 5mb.
 Player Interaction
 The players’ AIs will interact with the game via SOAP webservices. The webservices will be provide the following functionality:
 
-Login functionality. Players will issue a webservice command to login which responds with the board and the initial board state (position of tanks and bases) once complete. Once this has returned the game has started. Any attempts to login after the game has begun results in an immediate loss.
-Game status reporting. Players may issue a command to query the status of the game which includes the position of both players’ bases, the position of a player’s tanks and bullets and their recent events such as the destruction of units and mapping of blocks. Once queried, the events are cleared from the list.
-Perform Actions. Players may issue a command allowing them to specify a particular tank and the action they wish to be performed by the tank. The tank’s action is then set to the action specified by the player.
+Login functionality. Players will issue a webservice command to login which responds with the board once complete. Once this has returned the game has started. Any attempts to login after the game has begun results in an immediate loss.
+Game status reporting. Players may issue command to query the status of the game which includes the position of both players’ bases, the position of a player’s tanks and bullets and their recent events such as the destruction of units and mapping of blocks. Once queried, the events are cleared from the list.
+Perform Actions. Players may issue a command allowing them to specify a particular tank and the action they wish to be performed by the tank. This is accomplished by the setAction method, which takes as its first argument the tank that the action must be performed by and a second argument that specifies the action to be performed. The tank’s action is then set to the action specified by the player.
 
 A copy of the wsdl used to for this challenge can be found here.
 
@@ -53,8 +53,12 @@ LEFT – Move left one grid cell.
 Right – Move right one grid cell.
 FIRE – Fire bullets in the specified direction.
 NONE- Perform no action.
-Bullets are destroyed once they collide with another object and in addition will destroy the following:
+Bullets are destroyed once they collide with another object and in addition will destroy the following: 
 A row of five blocks in the direction consistent with how the bullets struck the blocks.
+The image below shows an example of a bullet traveling left (indicated by the red arrow) and colliding with a wall at block (5,5). 
+This collision results in blocks (5,3),(5,4), (5,5) (5,6), (5,7) being destroyed.
+
+
 Any tank, including tanks belonging to the player that fired the bullets (friendly fire).
 Any base, friendly or enemy.
 Other bullets, which results in both bullets being destroyed.
@@ -95,6 +99,9 @@ mvn archetype:generate -DgroupId=za.co.entelect.competition
 This will generate the standard project structure for a “Hello World” program with the name of battlematrix for you. This can then be built by changing into the folder corresponding to the artifact ID and running mvn package. The contents of your compile.bat file for the purposes of this project would also be mvn package.
 To run this example program, you would then enter:
  java -cp target/battlematrix-1.0-SNAPSHOT.jar za.co.entelect.competition.App
+To create the start.bat file, modify the java line above to take in a command line argument as a batch file. This accomplidhed by adding a %1 to the java line, indicating that the first parameter of the batch file shold be passed to the java program. The contents of start.bat for this basic example would then be:
+java -cp target/battlematrix-1.0-SNAPSHOT.jar za.co.entelect.competition.App %1
+
 
 .NET
 If you plan to develop your entry using a .NET language then you are also required to provide batch files to compile and run your project. However, most of the .NET generation is more easily done via graphical utilities such as Visual Studio Express which can be downloaded for free. Once it is installed, follow the wizard in order to create your project. All that remains for your entry is to create the batch files that will compile and run your project.
@@ -105,6 +112,6 @@ MSBuild.exe Entelect.proj
 
 As long as this is called from within a Visual Studio command prompt, this will build your project. The created files are placed inside the bin folder. The start.bat file should then contain, depending on the chosen name of your application,
 
-<path to your application in the bin folder>.exe
+<path to your application in the bin folder>.exe %1
 
-This will run your program.
+This will run your program whilst supplying as a command line parameter the first input to your start.bat file.

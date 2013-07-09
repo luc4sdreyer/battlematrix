@@ -27,6 +27,6 @@ public class Util {
 	}
 	
 	public static void print(String out) {
-		System.out.println(milli.format(Calendar.getInstance().getTime())+out);
+		System.out.println(milli.format(Calendar.getInstance().getTime())+" "+out);
 	}
 }

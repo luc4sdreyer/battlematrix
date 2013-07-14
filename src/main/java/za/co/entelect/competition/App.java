@@ -43,7 +43,7 @@ public class App
 		int prevTick = -1;
 
 		while (true) {            
-			Game game = null;
+			za.co.entelect.challenge.Game game = null;
 			try {
 				game = service.getStatus();
 			} catch (RemoteException e) {

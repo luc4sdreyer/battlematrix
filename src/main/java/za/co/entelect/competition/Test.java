@@ -5,7 +5,10 @@ import java.util.Random;
 public class Test {
 	public static void main(String[] args) {
 		//runMemTest();
-		runGeometryTest();
+		//runGeometryTest();
+		for (int i = 0; i < 100; i++) {
+			System.out.println(((int)(Math.random()*3))+10);
+		}
 	}
 
 	public static void runGeometryTest() {

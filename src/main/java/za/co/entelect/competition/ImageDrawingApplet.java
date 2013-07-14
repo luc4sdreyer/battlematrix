@@ -2,9 +2,6 @@ package za.co.entelect.competition;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.awt.*;
@@ -15,53 +12,24 @@ import java.awt.image.*;
 import javax.imageio.*;
 import javax.swing.*;
 
-import za.co.entelect.challenge.Game;
-
-class GameAction {
-	final static int NORTH = 2;
-	final static int EAST = 1;
-	final static int SOUTH = 0;
-	final static int WEST = 3;
-	
-	final static int MOVE = 10;
-	final static int FIRE = 11;
-	final static int NONE = 12;
-	
-	public final int type;
-	public final int direction;
-	
-	public GameAction(int type, int direction) {
-		super();
-		this.type = type;
-		this.direction = direction;
-	}
-	
-	public String toString() {
-		String desc = "";
-
-		switch (this.type) {
-			case GameAction.MOVE: 	desc += "MOVE";		break;
-			case GameAction.FIRE: 	desc += "FIRE";		break;
-			case GameAction.NONE: 	desc += "NONE";		break;
-			default:	desc += "UNKNOWN(" + this.type + ")";
-		}
-		desc += " ";
-		switch (this.direction) {
-			case GameAction.SOUTH: 	desc += "SOUTH v";		break;
-			case GameAction.EAST: 	desc += "EAST  >";		break;
-			case GameAction.NORTH: 	desc += "NORTH ^";		break;
-			case GameAction.WEST: 	desc += "WEST  <";		break;
-			default:	desc += "UNKNOWN(" + this.direction + ")";
-		}
-		
-		return desc;
-	}
-}
 
 abstract class Unit {
 	protected Point position;
 	protected int rotation;
 	protected boolean alive;
+	
+	public final static int EMPTY            = 0;
+	public final static int WALL             = 1;
+	public final static int TANK1A           = 2;
+	public final static int TANK1B           = 3;
+	public final static int TANK2A           = 4;
+	public final static int TANK2B           = 5;
+	public final static int BULLET_TANK1A    = 6;
+	public final static int BULLET_TANK1B    = 7;
+	public final static int BULLET_TANK2A    = 8;
+	public final static int BULLET_TANK2B    = 9;
+	public final static int BASE1            = 10;
+	public final static int BASE2            = 11;
 	
 	public Unit(Point position, int rotation) {
 		super();
@@ -94,6 +62,48 @@ abstract class Unit {
 		this.rotation = rotation;
 	}
 	public abstract Unit clone();
+	public static boolean isTankOrEmpty(int unitCode) {
+		if (unitCode == Unit.EMPTY || (unitCode >= Unit.TANK1A && unitCode <= Unit.TANK2B)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public static boolean isBulletOrEmpty(int unitCode) {
+		if (unitCode == Unit.EMPTY || (unitCode >= Unit.BULLET_TANK1A && unitCode <= Unit.BULLET_TANK2B)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public static boolean isBase(int unitCode) {
+		if (unitCode == Unit.BASE1 || unitCode == Unit.BASE2) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public static boolean isBullet(int unitCode) {
+		if (unitCode >= Unit.BULLET_TANK1A && unitCode <= Unit.BULLET_TANK2B) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public static boolean isTank(int unitCode) {
+		if (unitCode >= Unit.TANK1A && unitCode <= Unit.TANK2B) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public static boolean isEmptyOrWall(int unitCode) {
+		if (unitCode == Unit.EMPTY || unitCode == Unit.WALL) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 }
 
 class Bullet extends Unit {
@@ -181,12 +191,12 @@ class ImageDrawingComponent extends Component implements ActionListener {
 	private BufferedImage bullet;
 	private BufferedImage empty;
 	private BufferedImage collision;
-	private int blockSize = 16;
+	private int blockSize = 3;
 	private int timercount = 0;
 	private GameState previousGameState = null;
 	private GameState currentGameState = null;
 	private GameState nextGameState = null;
-	private double drawScale = 2;
+	private double drawScale = 3;
     private Timer timer;
     private final int DELAY;
     private Object syncObject;
@@ -266,7 +276,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 	}
 
 	public Dimension getPreferredSize() {
-		return new Dimension((int)this.drawScale*16*13, (int)this.drawScale*16*13);
+		return new Dimension((int)this.drawScale*this.blockSize*13*5, (int)this.drawScale*this.blockSize*13*5);
 	}
 	
 	private void drawTank(Graphics g, BufferedImage img, int idx, GameState prevGS,	GameState currGS, 
@@ -277,6 +287,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 				internalOffset.translate(1, 0);
 			}
 			int frame = 0;
+			// Don't animate the tank if it didn't move
 			if (prevGS.getTanks()[idx].getPosition().equals(currGS.getTanks()[idx].getPosition())) {
 				frame = 0;
 			} else {
@@ -316,7 +327,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 			rotation = (rotation + 2) % 4;
 		} 
 		
-		if (rotation != 0) {		
+		if ((img.getHeight() != 3) && (rotation != 0)) {		
 			double rotationRequired = rotation*Math.PI/2;
 			double locationX = img.getWidth() / 2;
 			double locationY = img.getHeight() / 2;
@@ -331,7 +342,16 @@ class ImageDrawingComponent extends Component implements ActionListener {
 			img = op.filter(img, null);
 		}
 		
+		
 		g2.drawImage(img, (int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), null);
+		if (numFrames == 2) {
+			//int thickness = 1;
+			//Stroke oldStroke = g2.getStroke();
+			g2.setColor(Color.WHITE);
+			//g2.setStroke(new BasicStroke(thickness));
+			g2.drawRect((int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), img.getWidth(), img.getHeight());
+			//g2.setStroke(oldStroke);
+		}
 	}
 
 	/** In this example the image is recalculated on the fly every time
@@ -359,7 +379,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 				
 		for (int y = 0; y < currGS.getMap().length; y++) {
 			for (int x = 0; x < currGS.getMap()[0].length; x++) {
-				if (currGS.getMap()[y][x] == true) {
+				if (currGS.getMap()[y][x] == 1) {
 					drawGrid(g, wall, x*blockSize, y*blockSize, 0, this.drawScale, 0, 1);
 				} else {
 					drawGrid(g, empty, x*blockSize, y*blockSize, 0, this.drawScale, 0, 1);
@@ -387,8 +407,11 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		}
 		
 		internalOffset = new Point(8,8);
-		for (int i = 0; i < currGS.getBullets().size(); i++) {
-			Bullet b = currGS.getBullets().get(i);
+		for (int i = 0; i < currGS.getBullets().length; i++) {
+			Bullet b = currGS.getBullets()[i];
+			if (!b.isAlive()) {
+				continue;
+			}
 			drawGrid(g, bullet, Util.movePoint(b.getPosition(), (b.getRotation()+2) % 4), b.getPosition(), internalOffset,
 					b.getRotation(), this.drawScale, 0, 1);
 		}
@@ -409,9 +432,9 @@ class ImageDrawingComponent extends Component implements ActionListener {
 //            checkCollision();
 //            move();
 //        }
-		System.out.print(". ");
+		//System.out.print(". ");
 		this.timercount++;
-		if (timercount >= 16) {
+		if (timercount >= 3) {
 			// Time to update the gameState 
 			timercount = 0;
 
@@ -443,9 +466,9 @@ public class ImageDrawingApplet extends JApplet {
 	private static final long serialVersionUID = 5023415827458014290L;
 	JButton b1;
 	final ImageDrawingComponent id;
-	final int frames = 16;
-	int fps = 16;
-	int DELAY = 1000/frames;
+	final int frames = 3;
+	//int fps = 3;
+	int DELAY = 100/frames;
 	long sleepTime = (long)(DELAY*frames*1);
 	boolean nextTick = false;
 	long stateTimeNS = 0;
@@ -453,14 +476,16 @@ public class ImageDrawingApplet extends JApplet {
 
 	ArrayList<GameAction>[] moveList;
     private GameAction p1reqAction;
+    private GameAction p1reqAction2;
 	
-	static GameState gameState;
+	//static GameState gameState;
+    Game game;
 
 	public ImageDrawingApplet () {
 		syncObject = new Object();
 		id = new ImageDrawingComponent(DELAY, syncObject);
         addKeyListener(new TAdapter());
-        p1reqAction = new GameAction(GameAction.NONE, GameAction.NORTH);
+        p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
 
         setFocusable(true);
 	}
@@ -506,15 +531,17 @@ public class ImageDrawingApplet extends JApplet {
 		f.add("Center", id);
 		f.pack();
 		f.setVisible(true);
-		gameState = newGame();
+		id.game = new Game(	"za.co.entelect.competition.bots.Random",
+							"za.co.entelect.competition.bots.Random",
+							"map.txt");
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
 //		gameState.getTanks()[3].setAlive(false);
 		
 		id.moveList = loadMoveList();
 		
-		id.setPreviousGameState(gameState.clone());
-		id.setCurrentGameState(gameState.clone());
+		id.setPreviousGameState(id.game.getGameState().clone());
+		id.setCurrentGameState(id.game.getGameState().clone());
 		id.repaint();
 		id.stateTimeNS = System.nanoTime();
 		id.generateNextGameState();
@@ -538,10 +565,27 @@ public class ImageDrawingApplet extends JApplet {
 	}
 	
 	public void generateNextGameState() {
-		Util.print("Applet got timer update!");
+		//Util.print("Applet got timer update!");
+		//System.out.println(gameState.toString());		
+		GameAction[] overrideActions = new GameAction[4];
+
+		for (int i = 0; i < 4; i++) {
+			if (moveList != null && this.game.getGameState().getTickCount() < moveList[i].size()) {
+				overrideActions[i] = moveList[i].get(this.game.getGameState().getTickCount());
+			}		
+		}
+
+		GameAction p1A = null;
+		if (p1reqAction2 != null) {
+			p1A = p1reqAction2;
+		} else {
+			p1A = p1reqAction;
+		}
+		if (p1A != null) {
+			overrideActions[0] = p1A;
+		}
 		
-		gameState.getCommanderActions(moveList);		
-		gameState.nextTick();
+		this.game.nextTick(overrideActions);
 
 		long timeLeft = (sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000 - 100;
 		if (timeLeft > 0) {
@@ -551,59 +595,18 @@ public class ImageDrawingApplet extends JApplet {
 				e1.printStackTrace();
 			}	
 		}
-		id.setNextGameState(gameState);//, updateDelay);
+		id.setNextGameState(this.game.getGameState());//, updateDelay);
 		timeLeft = (sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000;
-		System.out.println("timeLeft: "+timeLeft);
+		
+		if (this.game.getGameState().getStatus() != GameState.STATUS_ACTIVE) {
+			System.out.println(this.game.getGameState().getStatusString());
+		}
+		//System.out.println("timeLeft: "+timeLeft);
 		//Util.print("NextGameState Generated successfullly");
 	}
 
 	
-	public static GameState newGame() {
-		Scanner in = null;
-		try {
-			in = new Scanner(new File(".\\assets\\map.txt"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-		ArrayList<String> file = new ArrayList<String>(); 
-		while (in.hasNext()) {
-			String line = in.nextLine();
-			file.add(line);
-		}
-		in.close();
-		
-		boolean[][] map = new boolean[file.size()][file.get(0).length()];
-		Tank[] tanks = new Tank[4];
-		Base[] bases = new Base[2];
-		ArrayList<Bullet> bullets = new ArrayList<Bullet>();
-		ArrayList<Collision> collisions = new ArrayList<Collision>();
-		for (int y = 0; y < map.length; y++) {
-			for (int x = 0; x < map[0].length; x++) {
-				map[y][x] = false;
-				if (file.get(y).charAt(x) == '1') {
-					map[y][x] = true;
-				} else if (file.get(y).charAt(x) == 'A') {
-					tanks[0] = new Tank(new Point(x,y), 2, null);
-				} else if (file.get(y).charAt(x) == 'B') {
-					tanks[1] = new Tank(new Point(x,y), 2, null);
-				} else if (file.get(y).charAt(x) == 'X') {
-					tanks[2] = new Tank(new Point(x,y), 2, null);
-				} else if (file.get(y).charAt(x) == 'Y') {
-					tanks[3] = new Tank(new Point(x,y), 2, null);
-				} else if (file.get(y).charAt(x) == 'C') {
-					bases[0] = new Base(new Point(x,y), 2);
-				} else if (file.get(y).charAt(x) == 'Z') {
-					bases[1] = new Base(new Point(x,y), 2);
-				} else if (file.get(y).charAt(x) == '*') {
-					bullets.add(new Bullet(new Point(x,y), 2));
-				}
-			}
-		}
-		GameState newGame = new GameState(map, bullets, tanks, bases, collisions, 0);
-		return newGame;
-	}
-	
+
 	public static ArrayList<GameAction>[] loadMoveList() {
 		Scanner in = null;
 		try {
@@ -639,9 +642,9 @@ public class ImageDrawingApplet extends JApplet {
 					default:	type = -1;
 				}
 				switch (token.charAt(1)) {
-					case '0': 	direction = GameAction.NORTH;		break;
+					case '0': 	direction = GameAction.GUI_NORTH;	break;
 					case '1': 	direction = GameAction.EAST;		break;
-					case '2': 	direction = GameAction.SOUTH;		break;
+					case '2': 	direction = GameAction.GUI_SOUTH;	break;
 					case '3': 	direction = GameAction.WEST;		break;
 					default:	direction = -1;
 				}
@@ -667,11 +670,15 @@ public class ImageDrawingApplet extends JApplet {
 			}
 			else if (key == KeyEvent.VK_UP)
 			{
-				p1reqAction = new GameAction(GameAction.MOVE, GameAction.NORTH);
+				p1reqAction = new GameAction(GameAction.MOVE, GameAction.GUI_NORTH);
 			}
 			else if (key == KeyEvent.VK_DOWN)
 			{
-				p1reqAction = new GameAction(GameAction.MOVE, GameAction.SOUTH);
+				p1reqAction = new GameAction(GameAction.MOVE, GameAction.GUI_SOUTH);
+			}
+			else if (key == KeyEvent.VK_SPACE)
+			{
+				p1reqAction2 = new GameAction(GameAction.FIRE, GameAction.GUI_SOUTH);
 			}
 		}
 
@@ -681,7 +688,11 @@ public class ImageDrawingApplet extends JApplet {
 			if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_RIGHT || 
 					key == KeyEvent.VK_UP ||  key == KeyEvent.VK_DOWN)
 			{
-				p1reqAction = new GameAction(GameAction.NONE, GameAction.SOUTH);
+				p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_SOUTH);
+			}
+			else if (key == KeyEvent.VK_SPACE)
+			{
+				p1reqAction2 = null;
 			}
 		}
 	}

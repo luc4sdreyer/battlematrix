@@ -52,6 +52,9 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
 
         oper = new org.apache.axis.description.OperationDesc();
         oper.setName("login");
+        param = new org.apache.axis.description.ParameterDesc(new javax.xml.namespace.QName("", "playerName"), org.apache.axis.description.ParameterDesc.IN, new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"), java.lang.String.class, false, false);
+        param.setOmittable(true);
+        oper.addParameter(param);
         oper.setReturnType(new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "board"));
         oper.setReturnClass(za.co.entelect.challenge.State[][].class);
         oper.setReturnQName(new javax.xml.namespace.QName("", "return"));
@@ -355,7 +358,7 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
 }
     }
 
-    public za.co.entelect.challenge.State[][] login() throws java.rmi.RemoteException, za.co.entelect.challenge.NoBlameException, za.co.entelect.challenge.EndOfGameException {
+    public za.co.entelect.challenge.State[][] login(java.lang.String playerName) throws java.rmi.RemoteException, za.co.entelect.challenge.NoBlameException, za.co.entelect.challenge.EndOfGameException {
         if (super.cachedEndpoint == null) {
             throw new org.apache.axis.NoEndPointException();
         }
@@ -371,7 +374,7 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
 
         setRequestHeaders(_call);
         setAttachments(_call);
- try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {});
+ try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {playerName});
 
         if (_resp instanceof java.rmi.RemoteException) {
             throw (java.rmi.RemoteException)_resp;

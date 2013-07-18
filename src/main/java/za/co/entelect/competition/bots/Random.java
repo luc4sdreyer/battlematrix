@@ -1,11 +1,21 @@
 package za.co.entelect.competition.bots;
 
 import za.co.entelect.competition.GameAction;
+import za.co.entelect.competition.GameState;
 
 public class Random extends Bot {
 
+	public Random(int playerIndex) {
+		super(playerIndex);
+	}
+
 	@Override
-	public GameAction[] getActions() {
+	public GameAction[] getActions(GameState gameState, int timeLimitMS) {
+		return Random.getActionsStatic(gameState, timeLimitMS);
+	}
+	
+
+	public static GameAction[] getActionsStatic(GameState gameState, int timeLimitMS) {
 		GameAction[] next = new GameAction[2];
 		
 		int action = ((int)(Math.random()*3))+10;

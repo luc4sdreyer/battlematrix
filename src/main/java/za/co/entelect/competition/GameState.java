@@ -2,9 +2,6 @@ package za.co.entelect.competition;
 
 import java.awt.Point;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
 
 /**
  * A tank is defined by its top-left point
@@ -26,7 +23,7 @@ import java.util.Random;
  *
  */
 
-class GameState {
+public class GameState {
 	public static final int H_MINIMAX = 0;
 	public static final int NEG_INF = -1000000;
 	public static final int POS_INF = 1000000;
@@ -104,6 +101,13 @@ class GameState {
 	}
 	public void setStatus(int status) {
 		this.status = status;
+	}
+	public boolean isActive() {
+		if (this.status == GameState.STATUS_ACTIVE) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 	public GameState clone() {
 		int[][] newMap = new int[this.map.length][this.map[0].length];
@@ -199,11 +203,26 @@ class GameState {
 //		}
 //		return moves;
 //	}
-	/**
-	 * This returns only moves that will move the tank. A tank can always move in any direction for aiming.
-	 * @param p
-	 * @return
-	 */
+	public ArrayList<GameAction> getTankActions(int unitCode) {
+		if (Unit.isTank(unitCode)) {
+			Tank me = (Tank) getUnit(unitCode);
+			ArrayList<GameAction> actions = new ArrayList<GameAction>();
+			
+			if (me.isAlive()) {
+				for (int i = 0; i < 4; i++) {
+					actions.add(new GameAction(GameAction.MOVE, GameAction.NORTH + i));
+				}
+				if (!this.bullets[unitCode - 2].isAlive()) {
+					actions.add(new GameAction(GameAction.FIRE, GameAction.NORTH));
+				}
+			}
+			actions.add(new GameAction(GameAction.NONE, GameAction.NORTH));
+			
+			return actions;
+		} else {		
+			return null;
+		}
+	}
 	//TODO add moves that move into an area that currently contains a bullet but will be cleared next round.
 //	public ArrayList<Integer> getTankMovesDirection(Point p) {
 //		ArrayList<Integer> moves = new ArrayList<Integer>();
@@ -316,24 +335,115 @@ class GameState {
 			}
 			
 			//
+			// H levels:
+			// * 100k: 		Base existence
+			// * 60k - 20k:	Tank existence
+			// * 10k - 100:	Distance to enemy base
+			
+			//
 			// Calculate H
 			//			
 			if (numBase1 != numBase2) {
-				h = POS_INF * (numBase1 - numBase2);
+				h = 100000 * (numBase1 - numBase2);
 				return h;
 			}
 			
 			if (numTank1 != numTank2) {
 				if (numTank1 == 0 || numTank2 == 0) {
 					if (numTank1 == 0) {
-						h = -(numTank2 * 200000 + 400000);
+						h = -(numTank2 * 20000 + 40000);
 					} else {
-						h = (numTank1 * 200000 + 400000);
+						h = (numTank1 * 20000 + 40000);
 					}
 				} else {
-					h = (numTank1 - numTank2) * 400000;
+					h = (numTank1 - numTank2) * 40000;
 				}
 			}
+			
+			//
+			// Being close to the enemy base line is a good thing
+			//			
+			for (int i = 0; i < tanks.length; i++) {
+				int score = 0;
+				if (i < 2) {
+					score = 200 - Util.mDist(tanks[i].getPosition(), getUnit(Unit.BASE2).getPosition());					
+				} else {
+					score = -200 + Util.mDist(tanks[i].getPosition(), getUnit(Unit.BASE1).getPosition());
+				}
+				h += score;
+			}
+			
+			//
+			// Firing at enemy targets is a good thing
+			// 
+			for (int i = 0; i < bullets.length; i++) {
+				if (!bullets[i].isAlive()) {
+					continue;
+				}
+				int score = 0;
+				int walls = 0;
+				int empty = 0;
+				Point start = new Point(bullets[i].getPosition());
+				Point end = Util.movePointDist(bullets[i].getPosition(), bullets[i].getRotation(), 1000, this);
+				while(!start.equals(end)) {
+					if (this.map[start.y][start.x] == Unit.EMPTY) {
+						empty++;
+					} else if (this.map[start.y][start.x] == Unit.WALL) {
+						walls++;
+					} else {
+						if (Unit.isBase(this.map[start.y][start.x])) {
+							if (Unit.BASE1 + i/2 == this.map[start.y][start.x] && walls == 0) {
+								//
+								// Firing at own base!
+								//
+								score = -(10000 - empty);
+							} else {
+								score = 10000 - walls*10 - empty;
+							}
+							break;
+						} else if (Unit.isTank(this.map[start.y][start.x])) {
+							boolean friendlyFire = false;
+							if (i < 2) {
+								if ((Unit.TANK1A == this.map[start.y][start.x] 
+										|| Unit.TANK1B == this.map[start.y][start.x]) 
+										&& walls == 0) {
+									friendlyFire = true;
+								}
+							} else {
+								if ((Unit.TANK2A == this.map[start.y][start.x] 
+										|| Unit.TANK2B == this.map[start.y][start.x]) 
+										&& walls == 0) {
+									friendlyFire = true;
+								}
+							}
+							if (friendlyFire) {
+								//
+								// Firing at own tank!
+								//
+								score = -(1000 - empty);
+							} else {
+								score = 1000 - walls*10 - empty;
+							}
+							break;
+						}
+					}
+					if (start.x > end.x) {
+						start.x--;
+					} else if (start.x < end.x) {
+						start.x++;
+					} else if (start.y > end.y) {
+						start.y--;
+					} else {
+						start.y++;
+					}
+				}
+				if (i < 2) {
+					h += score;
+				} else {
+					h -= score;
+				}
+			}
+			
 		}		
 		return h;
 	}
@@ -355,10 +465,13 @@ class GameState {
 		// Clear all collisions, they last only one tick
 		//
 		collisions.clear();
-
-		//ArrayList<Unit> deadList = new ArrayList<Unit>(); 
+ 
 		ArrayList<Point> deadListPoint = new ArrayList<Point>(); 
-		
+
+		//
+		// Bullets move twice
+		//
+		moveBullets(deadListPoint);
 		moveBullets(deadListPoint);
 		
 		//
@@ -536,8 +649,11 @@ class GameState {
 		//	
 		// End-game conditions
 		//		
-		if (!bases[0].isAlive() || !bases[1].isAlive()) {
-			if (!bases[0].isAlive() && !bases[1].isAlive()) {
+		if (!bases[0].isAlive() 
+				|| !bases[1].isAlive()
+				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
+			if ((!bases[0].isAlive() && !bases[1].isAlive())
+				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
 				this.status = STATUS_DRAW;
 			} else if (!bases[0].isAlive()) {
 				this.status = STATUS_PLAYER2_WINS;
@@ -547,7 +663,14 @@ class GameState {
 		}
 	}
 	private void moveBullets(ArrayList<Point> deadListPoint) {
-
+		
+		Point[] oldBulletPositions = new Point[4];
+		for (int i = 0; i < oldBulletPositions.length; i++) {
+			if (bullets[i].isAlive()) {
+				oldBulletPositions[i] = new Point(bullets[i].position);				
+			}			 
+		}
+		
 		//
 		// Clear old Bullet positions
 		//
@@ -557,7 +680,15 @@ class GameState {
 			if (!me.isAlive()) {
 				continue;
 			}
-			this.map[me.position.y][me.position.x] = 0;
+			//
+			// This Bullet might be on top a Tank right now because the Bullet was moved twice.
+			//
+			int tankBelow = this.getTank(me.position);
+			if (tankBelow == -1) {
+				this.map[me.position.y][me.position.x] = 0;
+			} else {
+				this.map[me.position.y][me.position.x] = tankBelow;
+			}
 		}
 		
 		//
@@ -571,9 +702,38 @@ class GameState {
 			}
 			moveBulletsCheckNonTankCollisions(b, deadListPoint, i);
 		}
+
+		//
+		// Check for the case where two Bullets passed through each other.
+		// In this case destroy both bullets.
+		//
+		Point[] newBulletPositions = new Point[4];
+		for (int i = 0; i < newBulletPositions.length; i++) {
+			if (bullets[i].isAlive()) {
+				newBulletPositions[i] = new Point(bullets[i].position);				
+			}			 
+		}
+		for (int i = 0; i < oldBulletPositions.length; i++) {
+			for (int j = 0; j < newBulletPositions.length; j++) {
+				if (i != j 
+						&& oldBulletPositions[i] != null
+						&& oldBulletPositions[j] != null
+						&& newBulletPositions[i] != null
+						&& newBulletPositions[j] != null
+						&& oldBulletPositions[i].equals(newBulletPositions[j])
+						&& oldBulletPositions[j].equals(newBulletPositions[i])) {
+					deadListPoint.add(newBulletPositions[i]);
+					deadListPoint.add(newBulletPositions[j]);
+					collisions.add(new Collision(new Point(	newBulletPositions[i].x - tankSize/2, 
+															newBulletPositions[i].y - tankSize/2), 0));
+					collisions.add(new Collision(new Point(	newBulletPositions[j].x - tankSize/2, 
+															newBulletPositions[j].y - tankSize/2), 0));
+				}
+			}
+		}
 		
 		//
-		// Destroy everything that was hit by an old Bullet
+		// Destroy everything that was hit by an old Bullet. Tanks are hit later.
 		//
 		destroyNonTankBulletHits(deadListPoint);
 	}
@@ -678,22 +838,23 @@ class GameState {
 			collisions.add(new Collision(new Point(me.getPosition().x - tankSize/2, me.getPosition().y - tankSize/2), 0));
 		}
 	}
-//	public void getCommanderActions(ArrayList<GameAction>[] moveList, GameAction p1reqAction) {
-//		Random rand = new Random();		
-//		for (int i = 0; i < 4; i++) {
-//			int action = rand.nextInt(3)+10;
-//			int direction = rand.nextInt(4);
-//			
-//			GameAction next = new GameAction(action, direction);
-//			if (moveList != null && moveList[i] != null && moveList[i].size() > 0) {
-//				next = moveList[i].remove(0);
-//			}
-//			if (i == 0 && p1reqAction != null) {
-//				next = p1reqAction;
-//				//System.out.println("next GameAction: "+next);
-//			}
-//			//System.out.println("next GameAction["+i+"]: "+next);			
-//			getTanks()[i].setNextAction(next);			
-//		}		
-//	}
+	/**
+	 * Find a Tank based on Tank.position
+	 * @param p
+	 * @return
+	 */
+	private int getTank(Point p) {
+		Point me = null;
+		for (int i = 0; i < 4; i++) {
+			if (!this.tanks[i].isAlive()) {
+				continue;
+			}
+			me = this.tanks[i].getPosition();
+			if ((p.x >= me.x && p.x < me.x + GameState.tankSize)
+					&& (p.y >= me.y && p.y < me.y + GameState.tankSize)) {
+				return Unit.TANK1A + i;
+			}
+		}
+		return -1;
+	}
 }

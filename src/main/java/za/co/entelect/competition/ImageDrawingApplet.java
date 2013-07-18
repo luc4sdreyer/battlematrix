@@ -2,6 +2,7 @@ package za.co.entelect.competition;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.awt.*;
@@ -12,99 +13,6 @@ import java.awt.image.*;
 import javax.imageio.*;
 import javax.swing.*;
 
-
-abstract class Unit {
-	protected Point position;
-	protected int rotation;
-	protected boolean alive;
-	
-	public final static int EMPTY            = 0;
-	public final static int WALL             = 1;
-	public final static int TANK1A           = 2;
-	public final static int TANK1B           = 3;
-	public final static int TANK2A           = 4;
-	public final static int TANK2B           = 5;
-	public final static int BULLET_TANK1A    = 6;
-	public final static int BULLET_TANK1B    = 7;
-	public final static int BULLET_TANK2A    = 8;
-	public final static int BULLET_TANK2B    = 9;
-	public final static int BASE1            = 10;
-	public final static int BASE2            = 11;
-	
-	public Unit(Point position, int rotation) {
-		super();
-		this.position = position;
-		this.rotation = rotation;
-		this.alive = true;
-	}
-	public Unit(Point position, int rotation, boolean alive) {
-		super();
-		this.position = position;
-		this.rotation = rotation;
-		this.alive = alive;
-	}
-	public boolean isAlive() {
-		return alive;
-	}
-	public void setAlive(boolean alive) {
-		this.alive = alive;
-	}
-	public Point getPosition() {
-		return position;
-	}
-	public void setPosition(Point position) {
-		this.position = position;
-	}
-	public int getRotation() {
-		return rotation;
-	}
-	public void setRotation(int rotation) {
-		this.rotation = rotation;
-	}
-	public abstract Unit clone();
-	public static boolean isTankOrEmpty(int unitCode) {
-		if (unitCode == Unit.EMPTY || (unitCode >= Unit.TANK1A && unitCode <= Unit.TANK2B)) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	public static boolean isBulletOrEmpty(int unitCode) {
-		if (unitCode == Unit.EMPTY || (unitCode >= Unit.BULLET_TANK1A && unitCode <= Unit.BULLET_TANK2B)) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	public static boolean isBase(int unitCode) {
-		if (unitCode == Unit.BASE1 || unitCode == Unit.BASE2) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	public static boolean isBullet(int unitCode) {
-		if (unitCode >= Unit.BULLET_TANK1A && unitCode <= Unit.BULLET_TANK2B) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	public static boolean isTank(int unitCode) {
-		if (unitCode >= Unit.TANK1A && unitCode <= Unit.TANK2B) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	public static boolean isEmptyOrWall(int unitCode) {
-		if (unitCode == Unit.EMPTY || unitCode == Unit.WALL) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-}
 
 class Bullet extends Unit {
 	public Bullet(Point position, int rotation) {
@@ -118,37 +26,6 @@ class Bullet extends Unit {
 	}
 }
 
-
-class Tank extends Unit{
-	private GameAction nextAction;
-	public Tank(Point position, int rotation, GameAction nextAction) {
-		super(position, rotation);
-		this.nextAction = nextAction;
-	}
-	public Tank(Point position, int rotation, GameAction nextAction, boolean alive) {
-		super(position, rotation, alive);
-		this.nextAction = nextAction;
-	}
-	public Tank clone() {
-		return new Tank(this.position, this.rotation, this.nextAction, this.alive);
-	}
-	public GameAction getNextAction() {
-		return nextAction;
-	}
-	public void setNextAction(GameAction nextAction) {
-		this.nextAction = nextAction;
-	}
-	public void clearNextAction() {
-		this.nextAction = null;
-	}
-	public boolean hasNextAction() {
-		if (this.nextAction != null) {
-			return true;
-		} else {
-			return false;	
-		}
-	}
-}
 
 class Base extends Unit {
 	public Base(Point position, int rotation) {
@@ -276,7 +153,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 	}
 
 	public Dimension getPreferredSize() {
-		return new Dimension((int)this.drawScale*this.blockSize*13*5, (int)this.drawScale*this.blockSize*13*5);
+		return new Dimension((int)this.drawScale*this.blockSize*13*5, (int)this.drawScale*this.blockSize*12*5);
 	}
 	
 	private void drawTank(Graphics g, BufferedImage img, int idx, GameState prevGS,	GameState currGS, 
@@ -468,11 +345,12 @@ public class ImageDrawingApplet extends JApplet {
 	final ImageDrawingComponent id;
 	final int frames = 3;
 	//int fps = 3;
-	int DELAY = 100/frames;
+	int DELAY = 300/frames;
 	long sleepTime = (long)(DELAY*frames*1);
 	boolean nextTick = false;
 	long stateTimeNS = 0;
 	Object syncObject;							// syncObject is used to sync the animation and logic threads.
+	BufferedWriter fileWriter;
 
 	ArrayList<GameAction>[] moveList;
     private GameAction p1reqAction;
@@ -485,9 +363,15 @@ public class ImageDrawingApplet extends JApplet {
 		syncObject = new Object();
 		id = new ImageDrawingComponent(DELAY, syncObject);
         addKeyListener(new TAdapter());
-        p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
+        //p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
 
         setFocusable(true);
+        File currentMoveList = new File("movelists\\" + Util.date.format(Calendar.getInstance().getTime()) + ".txt");
+        try {
+			fileWriter = new BufferedWriter(new FileWriter(currentMoveList));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	public void setPreviousGameState(GameState gameState) {
 		id.setPreviousGameState(gameState);
@@ -519,20 +403,25 @@ public class ImageDrawingApplet extends JApplet {
 
 	public static void main(String s[]) {
 		JFrame f = new JFrame("ImageDrawing");
+		final ImageDrawingApplet id = new ImageDrawingApplet();
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
+				try {
+					id.fileWriter.close();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 				System.exit(0);
 			}
 		});
 
 		
-		ImageDrawingApplet id = new ImageDrawingApplet();
 		id.init();
 		f.add("Center", id);
 		f.pack();
 		f.setVisible(true);
 		id.game = new Game(	"za.co.entelect.competition.bots.Random",
-							"za.co.entelect.competition.bots.Random",
+							"za.co.entelect.competition.bots.Minimax",
 							"map.txt");
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
@@ -566,7 +455,7 @@ public class ImageDrawingApplet extends JApplet {
 	
 	public void generateNextGameState() {
 		//Util.print("Applet got timer update!");
-		//System.out.println(gameState.toString());		
+		//System.out.println(game.getGameState().toString());	
 		GameAction[] overrideActions = new GameAction[4];
 
 		for (int i = 0; i < 4; i++) {
@@ -585,18 +474,30 @@ public class ImageDrawingApplet extends JApplet {
 			overrideActions[0] = p1A;
 		}
 		
-		this.game.nextTick(overrideActions);
+		GameAction[] realActions = new GameAction[4]; 
+		
+		int timeLeft = (int) ((sleepTime*1000000 - (System.nanoTime() - stateTimeNS)) * 0.8 / 1000000);
+		this.game.nextTick(overrideActions, realActions, timeLeft);
 
-		long timeLeft = (sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000 - 100;
-		if (timeLeft > 0) {
-			try {
-				Thread.sleep(timeLeft);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}	
+		try {
+			for (int i = 0; i < realActions.length; i++) {
+					fileWriter.write(realActions[i].toString());
+			}
+			fileWriter.write("\n");
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
+
+		//long timeLeft = (sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000 - 100;
+//		if (timeLeft > 0) {
+//			try {
+//				Thread.sleep(timeLeft);
+//			} catch (InterruptedException e1) {
+//				e1.printStackTrace();
+//			}	
+//		}
 		id.setNextGameState(this.game.getGameState());//, updateDelay);
-		timeLeft = (sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000;
+		timeLeft = (int) ((sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000);
 		
 		if (this.game.getGameState().getStatus() != GameState.STATUS_ACTIVE) {
 			System.out.println(this.game.getGameState().getStatusString());
@@ -628,8 +529,10 @@ public class ImageDrawingApplet extends JApplet {
 		
 		@SuppressWarnings("unchecked")
 		ArrayList<GameAction>[] moves = new ArrayList[4]; 
+		for (int i = 0; i < moves.length; i++) {
+			moves[i] = new ArrayList<GameAction>();
+		}
 		for (int row = 0; row < file.size(); row++) {
-			moves[row] = new ArrayList<GameAction>();
 			StringTokenizer st = new StringTokenizer(file.get(row), ",");
 			while(st.hasMoreTokens()) {
 				String token = st.nextToken();

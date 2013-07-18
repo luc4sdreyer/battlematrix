@@ -3,6 +3,8 @@ package za.co.entelect.competition;
 import java.awt.Point;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -22,18 +24,25 @@ public class Game {
 	}
 	public Game(String player1, String player2, String gameFile) {
 		super();
-		Class<?> player1Class;
-		Class<?> player2Class;
 		try {
-			player1Class = Class.forName(player1);
-			this.player1 = (Bot)player1Class.newInstance();
-			player2Class = Class.forName(player2);
-			this.player2 = (Bot)player2Class.newInstance();
+			Constructor<?> player1Constructor = Class.forName(player1).getConstructor(Integer.TYPE);
+			this.player1 = (Bot) player1Constructor.newInstance(0);
+
+			Constructor<?> player2Constructor = Class.forName(player2).getConstructor(Integer.TYPE);
+			this.player2 = (Bot) player2Constructor.newInstance(1);
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (InstantiationException e) {
 			e.printStackTrace();
 		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			e.printStackTrace();
+		} catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		} catch (SecurityException e) {
 			e.printStackTrace();
 		}
 		
@@ -60,9 +69,9 @@ public class Game {
 	public int getTickCount() {
 		return this.gameState.getTickCount();
 	}	
-	public void nextTick(GameAction[] overrideActions) {
-		GameAction[] p1Moves = player1.getActions();
-		GameAction[] p2Moves = player2.getActions();
+	public boolean nextTick(GameAction[] overrideActions, GameAction[] realActions, int timeLimitMS) {
+		GameAction[] p1Moves = player1.getActions(this.gameState, timeLimitMS);
+		GameAction[] p2Moves = player2.getActions(this.gameState, timeLimitMS);
 		GameAction[] actions = new GameAction[4];
 		
 		actions[0] = p1Moves[0];
@@ -77,9 +86,20 @@ public class Game {
 				this.gameState.getTanks()[i].setNextAction(actions[i]);
 			}			
 		}
+		if (realActions != null) {
+			for (int i = 0; i < 4; i++) {
+				realActions[i] = this.gameState.getTanks()[i].getNextAction();
+			}
+		}
 		
-		this.gameState.nextTick();		
+		this.gameState.nextTick();
+		
+		if (this.gameState.getTickCount() > 200) {
+			this.gameState.setStatus(GameState.STATUS_DRAW);
+		}
+		return this.gameState.isActive();
 	}
+	
 	public static GameState newGame(String filename) {
 		Scanner in = null;
 		try {

@@ -19,6 +19,10 @@ class Result {
 	public Result() {
 		this.score = new Score();
 	}
+	public String toString() {
+        String output = score.name[0]+" vs "+score.name[1]+". W/D/L:" + score.wld[0]+" "+score.wld[2]+" "+score.wld[1];
+        return output;
+	}
 }
 
 public class Simulator implements Runnable {
@@ -27,17 +31,18 @@ public class Simulator implements Runnable {
 	private int timeLimit = 100;
 	private Result result;
 
-	public Simulator(Result result) {
+	public Simulator(Result result, ArrayList<String> file, ArrayList<GameAction>[] moveList) {
 		this.game = new Game(
 				"za.co.entelect.competition.bots.Random",
 				//"za.co.entelect.competition.bots.Minimax",
 				"za.co.entelect.competition.bots.MinimaxFixedDepth",
-				"map.txt");
+				"map.txt",
+				false);
 		//gameState.getTanks()[1].setAlive(false);
 		//gameState.getTanks()[2].setAlive(false);
 		//gameState.getTanks()[3].setAlive(false);
 
-		this.moveList = ImageDrawingApplet.loadMoveList();
+		this.moveList = moveList;
 		this.result = result;
 	}
 	
@@ -57,19 +62,7 @@ public class Simulator implements Runnable {
 			active = this.game.nextTick(overrideActions, null, timeLimit);
 		}
 		
-		this.generateResult();
-	}
-	
-	private void generateResult() {
-		result.score.name[0] = this.game.getPlayer1().getClass().getSimpleName();
-		result.score.name[1] = this.game.getPlayer2().getClass().getSimpleName();
-		
-		switch (this.game.getGameState().getStatus()) {
-			case GameState.STATUS_PLAYER1_WINS:		result.score.wld[0]++;	break;
-			case GameState.STATUS_PLAYER2_WINS:		result.score.wld[1]++;	break;
-			case GameState.STATUS_DRAW:				result.score.wld[2]++;	break;
-			default:								result.score.wld = null;
-		}
+		this.game.generateResult(this.result);
 	}
 
 	public static void main(String[] args) {
@@ -80,12 +73,15 @@ public class Simulator implements Runnable {
 		ExecutorService executor = Executors.newFixedThreadPool(4);
 		
 		numTests = 50;
+		
+		ArrayList<String> gameFile = Game.readGameFromFile("map.txt");
+		ArrayList<GameAction>[] moveList = null; //ImageDrawingApplet.loadMoveList();
         
 		ArrayList<Result> results = new ArrayList<Result>();
 		for (int i = 0; i < numTests; i++) {
 			Result nextResult = new Result();
 			results.add(nextResult);
-			Simulator sim = new Simulator(nextResult);
+			Simulator sim = new Simulator(nextResult, gameFile, moveList);
             executor.execute(sim);
 		}
         executor.shutdown();
@@ -99,7 +95,8 @@ public class Simulator implements Runnable {
         	wld[2] += result.score.wld[2];        	
 		}
         System.out.println(results.get(0).score.name[0]+" vs "+results.get(0).score.name[1]);
-        System.out.println(wld[0]+" "+wld[1]+" "+wld[2]);
+        System.out.println("W/D/L:");
+        System.out.println(wld[0]+" "+wld[2]+" "+wld[1]);
         
 		System.out.println("Total time: "+(System.nanoTime() - time)/1000000 + "ms");
 	}

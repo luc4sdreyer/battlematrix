@@ -25,7 +25,6 @@ public class App
 		try {
 			//java.net.URL url = new java.net.URL("http://localhost:9090/ChallengePort");
 			java.net.URL url = new java.net.URL("http://localhost:8080/Axis2WSTest/services/ChallengeService");
-			//javax.xml.rpc.Service s = 
 			service = new ChallengeServiceSoapBindingStub(url, null);
 			service.setMaintainSession(true);
 		} catch (AxisFault e) {
@@ -34,9 +33,9 @@ public class App
 			e.printStackTrace();
 		}
 
-		State[][] gameState = null;
+		State[][] eStateGrid = null;
 		try {
-			gameState = service.login(myName);
+			eStateGrid = service.login(myName);
 		} catch (NoBlameException e) {
 			e.printStackTrace();
 		} catch (EndOfGameException e) {
@@ -47,20 +46,21 @@ public class App
 //		catch (java.net.ConnectException e) {
 //			System.out.println("Could not connect");
 //		}
-		System.out.println("gameState[0][0]: "+gameState[0][0]);
+		System.out.println("eStateGrid[0][0]: "+eStateGrid[0][0]);
 		
 		int prevTick = -1;
 
 		while (true) {            
-			za.co.entelect.challenge.Game game = null;
+			za.co.entelect.challenge.Game eGame = null;
 			try {
-				game = service.getStatus();
+				eGame = service.getStatus();
 			} catch (RemoteException e) {
 				e.printStackTrace();
 			}
 			//System.out.println("Got status. Game: "+game);
+			//System.out.println("game.getCurrentTick(): "+game.getCurrentTick());
 			
-			if (game.getCurrentTick() == prevTick) {
+			if (eGame.getCurrentTick() == prevTick) {
 				try {
 					Thread.sleep(10);
 				} catch (InterruptedException e) {
@@ -70,9 +70,9 @@ public class App
 				continue;
 			}
 			
-			prevTick = game.getCurrentTick();
+			prevTick = eGame.getCurrentTick();
 
-			System.out.println("getCurrentTick(): "+game.getCurrentTick());
+			System.out.println("getCurrentTick(): "+eGame.getCurrentTick());
 			//System.out.println("getPlayerName(): "+game.getPlayerName());
 			
 //			for (BlockEvent blockEvent : game.getEvents().getBlockEvents()) {
@@ -84,6 +84,9 @@ public class App
 //			for (Player player : game.getPlayers()) {
 //				System.out.println("player: "+player.toString());
 //			}
+			
+			
+			GameState xGameState = GameState.fromEGame(eGame, eStateGrid);
 			
 			za.co.entelect.challenge.Action a1 = null;
 			za.co.entelect.challenge.Action a2 = null;
@@ -116,6 +119,8 @@ public class App
 				e.printStackTrace();
 				break;
 			}
+			
+//			/System.out.println(game.);
 			
 			long timeLeft = game.getNextTickTime().getTimeInMillis() - Calendar.getInstance().getTimeInMillis();
 			//System.out.println("timeLeft: "+timeLeft);

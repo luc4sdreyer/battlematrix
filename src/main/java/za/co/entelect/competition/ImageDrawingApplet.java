@@ -422,7 +422,8 @@ public class ImageDrawingApplet extends JApplet {
 		f.setVisible(true);
 		id.game = new Game(	"za.co.entelect.competition.bots.Random",
 							"za.co.entelect.competition.bots.Minimax",
-							"map.txt");
+							"map.txt",
+							false);
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
 //		gameState.getTanks()[3].setAlive(false);
@@ -513,7 +514,9 @@ public class ImageDrawingApplet extends JApplet {
 		try {
 			in = new Scanner(new File(".\\assets\\movelist.txt"));
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			//e.printStackTrace();
+			System.out.println("Movelist not found!");
+			return null;
 		}
 		
 		ArrayList<String> file = new ArrayList<String>(); 

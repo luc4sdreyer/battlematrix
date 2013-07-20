@@ -2,12 +2,12 @@ package za.co.entelect.competition;
 
 
 public class GameAction {
-	final static int NORTH = 0;
-	final static int EAST = 1;
-	final static int SOUTH = 2;
-	final static int WEST = 3;
-	final static int GUI_NORTH = 2;
-	final static int GUI_SOUTH = 0;
+	public final static int NORTH = 0;
+	public final static int EAST = 1;
+	public final static int SOUTH = 2;
+	public final static int WEST = 3;
+	public final static int GUI_NORTH = 2;
+	public final static int GUI_SOUTH = 0;
 	
 	public final static int MOVE = 10;
 	public final static int FIRE = 11;

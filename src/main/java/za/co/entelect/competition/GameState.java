@@ -3,6 +3,9 @@ package za.co.entelect.competition;
 import java.awt.Point;
 import java.util.ArrayList;
 
+import org.omg.PortableServer.POAManagerPackage.State;
+
+
 /**
  * A tank is defined by its top-left point
  * 
@@ -139,6 +142,128 @@ public class GameState {
 		}
 		
 		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount, this.status);
+	}
+	public static GameState fromEGame(za.co.entelect.challenge.Game eGame, za.co.entelect.challenge.State[][] eStateGrid) {
+		if (eGame.getPlayers().length != 2) {
+			System.err.println("eGame.getPlayers().length != 2");
+			return null;
+		}
+		
+		Tank[] newTanks = new Tank[4];
+		Base[] newBases = new Base[2];
+		Bullet[] newBullets = new Bullet[4];
+		
+		for (int i = 0; i < 2; i++) {
+			za.co.entelect.challenge.Player ePlayer = eGame.getPlayers()[i];
+			
+			za.co.entelect.challenge.Base eBase = ePlayer.getBase();
+			if (eBase == null) {
+				newBases[i] = new Base(new Point(0,0), 2, false);
+			} else {
+				newBases[i] = new Base(new Point(eBase.getX(),eBase.getY()), 2, true);
+			}
+			
+			za.co.entelect.challenge.Unit eUnits[] = ePlayer.getUnits();
+			if (eUnits == null) {
+				newTanks[2*i + 0] = new Tank(new Point(0,0), 2, null, false);
+				newTanks[2*i + 1] = new Tank(new Point(0,0), 2, null, false);
+			} else {
+				if (eUnits.length > 2) {
+					System.err.println("eUnits.length > 2");
+					return null;
+				}
+				
+				int idx = 0;
+				if (eUnits[idx] == null) {
+					newTanks[2*i + idx] = new Tank(new Point(0,0), 2, null, false);
+				} else {
+					newTanks[2*i + idx] = new Tank(new Point(eUnits[idx].getX(),eUnits[idx].getY()), EDirectionToXRotation(eUnits[idx].getDirection()), null, true);
+				}
+				
+				idx = 1;
+				if (eUnits[idx] == null) {
+					newTanks[2*i + idx] = new Tank(new Point(0,0), 2, null, false);
+				} else {
+					newTanks[2*i + idx] = new Tank(new Point(eUnits[idx].getX(),eUnits[idx].getY()), EDirectionToXRotation(eUnits[idx].getDirection()), null, true);
+				}
+			}
+			
+			za.co.entelect.challenge.Bullet eBullets[] = ePlayer.getBullets();
+			if (eBullets == null) {
+				newBullets[2*i + 0] = new Bullet(new Point(0,0), 2, false);
+				newBullets[2*i + 1] = new Bullet(new Point(0,0), 2, false);
+			} else {
+				if (eBullets.length > 2) {
+					System.err.println("eBullets.length > 2");
+					return null;
+				}
+				
+				int idx = 0;
+				if (eBullets[idx] == null) {
+					newBullets[2*i + idx] = new Bullet(new Point(0,0), 2, false);
+				} else {
+					newBullets[2*i + idx] = new Bullet(new Point(eBullets[idx].getX(),eBullets[idx].getY()), EDirectionToXRotation(eBullets[idx].getDirection()), true);
+				}
+				
+				idx = 1;
+				if (eBullets[idx] == null) {
+					newBullets[2*i + idx] = new Bullet(new Point(0,0), 2, false);
+				} else {
+					newBullets[2*i + idx] = new Bullet(new Point(eBullets[idx].getX(),eBullets[idx].getY()), EDirectionToXRotation(eBullets[idx].getDirection()), true);
+				}
+			}
+		}		
+		
+		//int[][] newMap = new int[eBoard.getStates().length][eBoard.getStates()[0].getItem().length];
+		int[][] newMap = new int[eStateGrid.length][eStateGrid[0].length];
+
+		//TODO: Don't ignore NONE and OUT_OF_BOUNDS states!
+		for (int y = 0; y < newMap.length; y++) {
+			for (int x = 0; x < newMap[0].length; x++) {
+				if (eStateGrid[y][x].getValue().equals(za.co.entelect.challenge.State._FULL)) {
+					newMap[y][x] = 1;
+				}
+			}
+		}		
+
+		for (int i = 0; i < newBases.length; i++) {
+			Base b = newBases[i]; 
+			if (!b.isAlive()) {
+				continue;
+			}
+			newMap[b.getPosition().y][b.getPosition().x] = Unit.BASE1+i;
+		}
+		for (int i = 0; i < newTanks.length; i++) {
+			Tank t = newTanks[i];
+			if (!t.isAlive()) {
+				continue;
+			}
+			for (int y2 = 0; y2 < GameState.tankSize; y2++) {
+				for (int x2 = 0; x2 < GameState.tankSize; x2++) {
+					newMap[t.getPosition().y+y2][t.getPosition().x+x2] = Unit.TANK1A+i;
+				}
+			}
+		}
+		for (int i = 0; i < newBullets.length; i++) {
+			Bullet b = newBullets[i];
+			if (!b.isAlive()) {
+				continue;
+			}
+			newMap[b.getPosition().y][b.getPosition().x] = Unit.BULLET_TANK1A+i;
+		}
+		
+		ArrayList<Collision> newCollisions = new ArrayList<Collision>();
+		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, 0, GameState.STATUS_ACTIVE);
+	}
+	public static int EDirectionToXRotation(za.co.entelect.challenge.Direction eDirection) {
+		int rotation = -1;
+		switch (eDirection.getValue()) {
+			case "UP":		rotation = GameAction.NORTH;	break;
+			case "RIGHT":	rotation = GameAction.EAST;		break;
+			case "DOWN":	rotation = GameAction.SOUTH;	break;
+			case "LEFT":	rotation = GameAction.WEST;		break;
+		}
+		return rotation;
 	}
 	public Unit getUnit(int unitCode) {
 		switch (unitCode) {

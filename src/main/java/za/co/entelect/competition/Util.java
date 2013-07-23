@@ -50,6 +50,34 @@ public class Util {
 			return null;
 		}
 	}
+
+	public static Point movePointDist(Point p, int direction, int distance) {
+		//return new Point(p.x + (int)Math.sin(Math.PI/2*direction), p.y + (int)Math.cos(Math.PI/2*direction));
+		int d = 0;
+		if (direction == 0) {
+			while (d < distance) {
+				d++;
+			}
+			return new Point(p.x, p.y+d);
+		} else if (direction == 1) {
+			while (d < distance) {
+				d++;
+			}
+			return new Point(p.x+d, p.y);
+		} else if (direction == 2) {
+			while (d < distance) {
+				d++;
+			}
+			return new Point(p.x, p.y-d);
+		} else if (direction == 3) {
+			while (d < distance) {
+				d++;
+			}
+			return new Point(p.x-d, p.y);
+		} else {
+			return null;
+		}
+	}
 	
 	public static int mDist(Point p1, Point p2) {
 		return Math.abs(p2.x - p1.x) + Math.abs(p2.y - p1.y);

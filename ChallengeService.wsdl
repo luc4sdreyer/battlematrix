@@ -1,0 +1,268 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="ChallengeService" targetNamespace="http://challenge.entelect.co.za/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://challenge.entelect.co.za/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+  <wsdl:types>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://challenge.entelect.co.za/" attributeFormDefault="unqualified" elementFormDefault="unqualified" targetNamespace="http://challenge.entelect.co.za/">
+  <xs:element name="getStatus" type="tns:getStatus"/>
+  <xs:element name="getStatusResponse" type="tns:getStatusResponse"/>
+  <xs:element name="login" type="tns:login"/>
+  <xs:element name="loginResponse" type="tns:loginResponse"/>
+  <xs:element name="setAction" type="tns:setAction"/>
+  <xs:element name="setActionResponse" type="tns:setActionResponse"/>
+  <xs:complexType name="getStatus">
+    <xs:sequence/>
+  </xs:complexType>
+  <xs:complexType name="getStatusResponse">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="return" type="tns:game"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="game">
+    <xs:sequence>
+      <xs:element name="currentTick" type="xs:int"/>
+      <xs:element minOccurs="0" name="events" type="tns:events"/>
+      <xs:element minOccurs="0" name="nextTickTime" type="xs:dateTime"/>
+      <xs:element minOccurs="0" name="playerName" type="xs:string"/>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="players" nillable="true" type="tns:player"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="events">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="blockEvents" nillable="true" type="tns:blockEvent"/>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="unitEvents" nillable="true" type="tns:unitEvent"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="blockEvent">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="newState" type="tns:state"/>
+      <xs:element minOccurs="0" name="point" type="tns:point"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="point">
+    <xs:sequence>
+      <xs:element name="x" type="xs:int"/>
+      <xs:element name="y" type="xs:int"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="unitEvent">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="bullet" type="tns:bullet"/>
+      <xs:element name="tickTime" type="xs:int"/>
+      <xs:element minOccurs="0" name="unit" type="tns:unit"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="bullet">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="direction" type="tns:direction"/>
+      <xs:element name="id" type="xs:int"/>
+      <xs:element name="x" type="xs:int"/>
+      <xs:element name="y" type="xs:int"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="unit">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="action" type="tns:action"/>
+      <xs:element minOccurs="0" name="direction" type="tns:direction"/>
+      <xs:element name="id" type="xs:int"/>
+      <xs:element name="x" type="xs:int"/>
+      <xs:element name="y" type="xs:int"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="player">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="base" type="tns:base"/>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="bullets" nillable="true" type="tns:bullet"/>
+      <xs:element minOccurs="0" name="name" type="xs:string"/>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="units" nillable="true" type="tns:unit"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="base">
+    <xs:sequence>
+      <xs:element name="x" type="xs:int"/>
+      <xs:element name="y" type="xs:int"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType abstract="true" name="abstractCollection">
+    <xs:sequence/>
+  </xs:complexType>
+  <xs:complexType abstract="true" name="abstractList">
+    <xs:complexContent>
+      <xs:extension base="tns:abstractCollection">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="arrayList">
+    <xs:complexContent>
+      <xs:extension base="tns:abstractList">
+        <xs:sequence/>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="setAction">
+    <xs:sequence>
+      <xs:element name="arg0" type="xs:int"/>
+      <xs:element minOccurs="0" name="arg1" type="tns:action"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="setActionResponse">
+    <xs:sequence/>
+  </xs:complexType>
+  <xs:complexType name="login">
+    <xs:sequence/>
+  </xs:complexType>
+  <xs:complexType name="loginResponse">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="return" type="tns:board"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="board">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="states" nillable="true" type="tns:stateArray"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:simpleType name="state">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="FULL"/>
+      <xs:enumeration value="EMPTY"/>
+      <xs:enumeration value="OUT_OF_BOUNDS"/>
+      <xs:enumeration value="NONE"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="direction">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NONE"/>
+      <xs:enumeration value="UP"/>
+      <xs:enumeration value="DOWN"/>
+      <xs:enumeration value="LEFT"/>
+      <xs:enumeration value="RIGHT"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="action">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="NONE"/>
+      <xs:enumeration value="UP"/>
+      <xs:enumeration value="DOWN"/>
+      <xs:enumeration value="LEFT"/>
+      <xs:enumeration value="RIGHT"/>
+      <xs:enumeration value="FIRE"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType final="#all" name="stateArray">
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" minOccurs="0" name="item" nillable="true" type="tns:state"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="EndOfGameException" type="tns:EndOfGameException"/>
+  <xs:complexType name="EndOfGameException">
+    <xs:sequence/>
+  </xs:complexType>
+  <xs:element name="NoBlameException" type="tns:NoBlameException"/>
+  <xs:complexType name="NoBlameException">
+    <xs:sequence/>
+  </xs:complexType>
+</xs:schema>
+  </wsdl:types>
+  <wsdl:message name="setAction">
+    <wsdl:part name="parameters" element="tns:setAction">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="EndOfGameException">
+    <wsdl:part name="EndOfGameException" element="tns:EndOfGameException">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="login">
+    <wsdl:part name="parameters" element="tns:login">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="setActionResponse">
+    <wsdl:part name="parameters" element="tns:setActionResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="loginResponse">
+    <wsdl:part name="parameters" element="tns:loginResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="NoBlameException">
+    <wsdl:part name="NoBlameException" element="tns:NoBlameException">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="getStatus">
+    <wsdl:part name="parameters" element="tns:getStatus">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="getStatusResponse">
+    <wsdl:part name="parameters" element="tns:getStatusResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="Challenge">
+    <wsdl:operation name="getStatus">
+      <wsdl:input name="getStatus" message="tns:getStatus">
+    </wsdl:input>
+      <wsdl:output name="getStatusResponse" message="tns:getStatusResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="setAction">
+      <wsdl:input name="setAction" message="tns:setAction">
+    </wsdl:input>
+      <wsdl:output name="setActionResponse" message="tns:setActionResponse">
+    </wsdl:output>
+      <wsdl:fault name="EndOfGameException" message="tns:EndOfGameException">
+    </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="login">
+      <wsdl:input name="login" message="tns:login">
+    </wsdl:input>
+      <wsdl:output name="loginResponse" message="tns:loginResponse">
+    </wsdl:output>
+      <wsdl:fault name="NoBlameException" message="tns:NoBlameException">
+    </wsdl:fault>
+      <wsdl:fault name="EndOfGameException" message="tns:EndOfGameException">
+    </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="ChallengeServiceSoapBinding" type="tns:Challenge">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="getStatus">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="getStatus">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="getStatusResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="setAction">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="setAction">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="setActionResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="EndOfGameException">
+        <soap:fault name="EndOfGameException" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="login">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="login">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="loginResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="NoBlameException">
+        <soap:fault name="NoBlameException" use="literal"/>
+      </wsdl:fault>
+      <wsdl:fault name="EndOfGameException">
+        <soap:fault name="EndOfGameException" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="ChallengeService">
+    <wsdl:port name="ChallengePort" binding="tns:ChallengeServiceSoapBinding">
+      <soap:address location="http://localhost:9090/ChallengePort"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

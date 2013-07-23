@@ -72,7 +72,7 @@ public class Simulator implements Runnable {
 		
 		ExecutorService executor = Executors.newFixedThreadPool(4);
 		
-		numTests = 50;
+		numTests = 500;
 		
 		ArrayList<String> gameFile = Game.readGameFromFile("map.txt");
 		ArrayList<GameAction>[] moveList = null; //ImageDrawingApplet.loadMoveList();

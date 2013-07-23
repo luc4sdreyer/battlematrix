@@ -13,6 +13,36 @@ import java.awt.image.*;
 import javax.imageio.*;
 import javax.swing.*;
 
+class UserInput {
+	private Calendar timePressed;
+	private GameAction action;
+	private boolean pressed;
+	public UserInput(Calendar timePressed, GameAction action, boolean pressed) {
+		super();
+		this.timePressed = timePressed;
+		this.action = action;
+		this.pressed = pressed;
+	}
+	public Calendar getTimePressed() {
+		return timePressed;
+	}
+	public void setTimePressed(Calendar timePressed) {
+		this.timePressed = timePressed;
+	}
+	public GameAction getAction() {
+		return action;
+	}
+	public void setAction(GameAction action) {
+		this.action = action;
+	}
+	public boolean isPressed() {
+		return pressed;
+	}
+	public void setPressed(boolean pressed) {
+		this.pressed = pressed;
+	}
+	
+}
 
 class Bullet extends Unit {
 	public Bullet(Point position, int rotation) {
@@ -58,16 +88,16 @@ class ImageDrawingComponent extends Component implements ActionListener {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	private BufferedImage tank1A;
-	private BufferedImage tank1B;
-	private BufferedImage base1;
-	private BufferedImage tank2A;
-	private BufferedImage tank2B;
-	private BufferedImage base2;
-	private BufferedImage wall;
-	private BufferedImage bullet;
-	private BufferedImage empty;
-	private BufferedImage collision;
+	private BufferedImage[] tank1A;
+	private BufferedImage[] tank1B;
+	private BufferedImage[] base1;
+	private BufferedImage[] tank2A;
+	private BufferedImage[] tank2B;
+	private BufferedImage[] base2;
+	private BufferedImage[] wall;
+	private BufferedImage[] bullet;
+	private BufferedImage[] empty;
+	private BufferedImage[] collision;
 	private int blockSize = 3;
 	private int timercount = 0;
 	private GameState previousGameState = null;
@@ -93,7 +123,6 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		DELAY = delay;
         timer = new Timer(DELAY, this);
         this.syncObject = syncObject;
-        timer.start();
         //addKeyListener(new TAdapter());
         setFocusable(true);
 	}
@@ -135,20 +164,58 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		}
 	}
 	
-	private BufferedImage initImage(String path) {
-		BufferedImage image = null;
+	static BufferedImage deepCopy(BufferedImage bi) {
+		ColorModel cm = bi.getColorModel();
+		boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+		WritableRaster raster = bi.copyData(null);
+		return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+	}
+	
+	private BufferedImage[] initImage(String path) {
+		BufferedImage[] image = new BufferedImage[4];
 		try {
-			image = ImageIO.read(new File(path));
-			if (image.getType() != BufferedImage.TYPE_INT_ARGB) {
-				BufferedImage bi2 = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+			image[0] = ImageIO.read(new File(path));
+			if (image[0].getType() != BufferedImage.TYPE_INT_ARGB) {
+				BufferedImage bi2 = new BufferedImage(image[0].getWidth(), image[0].getHeight(), BufferedImage.TYPE_INT_ARGB);
 				Graphics big = bi2.getGraphics();
-				big.drawImage(image, 0, 0, null);
-				image = bi2;
+				big.drawImage(image[0], 0, 0, null);
+				image[0] = bi2;
 			}
 		} catch (IOException e) {
 			System.out.println("Image could not be read");
 			//            System.exit(1);
 		}
+		
+		for (int i = 1; i < 4; i++) {
+			if (image[0].getHeight() != 3) {
+				double rotationRequired = i*Math.PI/2;
+				double locationX = 0;
+				double locationY = 0;
+				if (i == 1) {
+					locationX = image[0].getHeight() / 2;
+					locationY = image[0].getHeight() / 2;
+				} else if (i == 3) {
+					locationX = image[0].getWidth() / 2;
+					locationY = image[0].getWidth() / 2;
+				} else {
+					locationX = image[0].getWidth() / 2;
+					locationY = image[0].getHeight() / 2;					
+				}
+				AffineTransform tx = AffineTransform.getRotateInstance(rotationRequired, locationX, locationY);
+				AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);		
+				image[i] = op.filter(image[0], null);
+			} else {
+				image[i] = deepCopy(image[0]);
+			}
+		}
+		for (int i = 0; i < 4; i++) {
+			if (this.drawScale != 1) {
+				AffineTransform tx = AffineTransform.getScaleInstance(this.drawScale, this.drawScale);
+				AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+				image[i] = op.filter(image[i], null);
+			}
+		}
+		
 		return image;	
 	}
 
@@ -156,7 +223,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		return new Dimension((int)this.drawScale*this.blockSize*13*5, (int)this.drawScale*this.blockSize*12*5);
 	}
 	
-	private void drawTank(Graphics g, BufferedImage img, int idx, GameState prevGS,	GameState currGS, 
+	private void drawTank(Graphics g, BufferedImage[] img, int idx, GameState prevGS,	GameState currGS, 
 			double drawScale, int numFrames) {
 		if (currGS.getTanks()[idx].isAlive()) {
 			Point internalOffset = new Point(0,0);
@@ -175,7 +242,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		}		
 	}
 
-	private void drawGrid(Graphics g, BufferedImage img, Point previousPos, Point currentPos, Point internalOffset,
+	private void drawGrid(Graphics g, BufferedImage[] img, Point previousPos, Point currentPos, Point internalOffset,
 			int rotation, double scale, int frame, int numFrames) {
 		int x = ((currentPos.x - previousPos.x) * (this.timercount+1)) + (previousPos.x * this.blockSize); // + internalOffset.x;
 		int y = ((currentPos.y - previousPos.y) * (this.timercount+1)) + (previousPos.y * this.blockSize); // + internalOffset.y;
@@ -189,45 +256,57 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		drawGrid(g, img, x, y, rotation, scale, frame, numFrames);
 	}	
 	
-	private void drawGrid(Graphics g, BufferedImage img, int pixelX, int pixelY,
+	private void drawGrid(Graphics g, BufferedImage[] img, int pixelX, int pixelY,
 			int rotation, double scale, int frame, int numFrames) {	
 		Graphics2D g2 = (Graphics2D) g;	
 		
-		if (numFrames != 1) {
-			if (img.getWidth() == 128) {
-				//System.out.println("x: "+(img.getWidth()*frame/numFrames)+"\tw: "+img.getWidth()/numFrames+"\tframe: "+frame);
-			}
-			img = img.getSubimage((img.getWidth()*frame/numFrames), 0, img.getWidth()/numFrames, img.getHeight());
-		}
-		
 		if (rotation == 0 || rotation == 2) {
 			rotation = (rotation + 2) % 4;
-		} 
-		
-		if ((img.getHeight() != 3) && (rotation != 0)) {		
-			double rotationRequired = rotation*Math.PI/2;
-			double locationX = img.getWidth() / 2;
-			double locationY = img.getHeight() / 2;
-			AffineTransform tx = AffineTransform.getRotateInstance(rotationRequired, locationX, locationY);
-			AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);		
-			img = op.filter(img, null);
+		}
+		if (img[0].getHeight() == 3) {
+			rotation = 0;
 		}
 		
-		if (scale != 1) {
-			AffineTransform tx = AffineTransform.getScaleInstance(scale, scale);
-			AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
-			img = op.filter(img, null);
+		BufferedImage toDraw = img[rotation];
+		
+		if (numFrames != 1) {
+			if (img[0].getWidth() == 128) {
+				//System.out.println("x: "+(img.getWidth()*frame/numFrames)+"\tw: "+img.getWidth()/numFrames+"\tframe: "+frame);
+			}
+			//Point p = new Point(img[rotation].getWidth()/2,img[rotation].getHeight()/2);
+			//p = Util.movePointDist(p, (rotation+1)%4, (img[rotation].getWidth()*frame/numFrames));
+			//p.translate(-img[rotation].getWidth()/2, -img[rotation].getHeight()/2);
+			if (rotation == 0) {
+				toDraw = toDraw.getSubimage(img[rotation].getWidth()*frame/numFrames, 0, img[rotation].getWidth()/numFrames, img[rotation].getHeight());
+			} else if (rotation == 1) {
+				//toDraw = toDraw.getSubimage(0, img[rotation].getHeight()*frame/numFrames, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
+				//System.out.println("img[rotation].getHeight()"+img[rotation].getHeight());
+				//System.out.println("img[rotation].getWidth()"+img[rotation].getWidth());
+				toDraw = toDraw.getSubimage(0, img[rotation].getHeight()*frame/numFrames, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
+			} else if (rotation == 2) {
+				toDraw = toDraw.getSubimage(img[rotation].getWidth()*(numFrames - 1)/numFrames - img[rotation].getWidth()*frame/numFrames, 0, img[rotation].getWidth()/numFrames, img[rotation].getHeight());
+			} else if (rotation == 3) {
+				toDraw = toDraw.getSubimage(0, img[rotation].getHeight()*(numFrames - 1)/numFrames - img[rotation].getHeight()*frame/numFrames, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
+				//toDraw = toDraw.getSubimage(0, 0, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
+			} 
 		}
 		
 		
-		g2.drawImage(img, (int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), null);
+//		
+//		if ((img.getHeight() != 3) && (rotation != 0)) {		
+//			double rotationRequired = rotation*Math.PI/2;
+//			double locationX = img.getWidth() / 2;
+//			double locationY = img.getHeight() / 2;
+//			AffineTransform tx = AffineTransform.getRotateInstance(rotationRequired, locationX, locationY);
+//			AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);		
+//			img = op.filter(img, null);
+//		}
+		
+		
+		g2.drawImage(toDraw, (int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), null);
 		if (numFrames == 2) {
-			//int thickness = 1;
-			//Stroke oldStroke = g2.getStroke();
-			g2.setColor(Color.WHITE);
-			//g2.setStroke(new BasicStroke(thickness));
-			g2.drawRect((int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), img.getWidth(), img.getHeight());
-			//g2.setStroke(oldStroke);
+			//g2.setColor(Color.WHITE);
+			//g2.drawRect((int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), img[0].getWidth(), img[0].getHeight());
 		}
 	}
 
@@ -336,6 +415,10 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		}
         repaint();
 	}
+
+	public void startTimer() {
+        timer.start();
+	}
 }
 
 public class ImageDrawingApplet extends JApplet {
@@ -345,7 +428,7 @@ public class ImageDrawingApplet extends JApplet {
 	final ImageDrawingComponent id;
 	final int frames = 3;
 	//int fps = 3;
-	int DELAY = 300/frames;
+	int DELAY = 150/frames;
 	long sleepTime = (long)(DELAY*frames*1);
 	boolean nextTick = false;
 	long stateTimeNS = 0;
@@ -355,6 +438,9 @@ public class ImageDrawingApplet extends JApplet {
 	ArrayList<GameAction>[] moveList;
     private GameAction p1reqAction;
     private GameAction p1reqAction2;
+    private UserInput[] userInput;
+    
+    
 	
 	//static GameState gameState;
     Game game;
@@ -363,9 +449,18 @@ public class ImageDrawingApplet extends JApplet {
 		syncObject = new Object();
 		id = new ImageDrawingComponent(DELAY, syncObject);
         addKeyListener(new TAdapter());
-        //p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
+        p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
+        this.userInput = new UserInput[5];
+       
+        this.userInput[0] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_NORTH), false);
+        this.userInput[1] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.EAST), false);
+        this.userInput[2] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_SOUTH), false);
+        this.userInput[3] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.WEST), false);
+        this.userInput[4] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.FIRE, GameAction.GUI_NORTH), false);
+        
 
-        setFocusable(true);
+		setFocusable(true);
+        
         File currentMoveList = new File("movelists\\" + Util.date.format(Calendar.getInstance().getTime()) + ".txt");
         try {
 			fileWriter = new BufferedWriter(new FileWriter(currentMoveList));
@@ -387,15 +482,17 @@ public class ImageDrawingApplet extends JApplet {
 	public void init() {
 		add("Center", id);
 
-		b1 = new JButton("Disable middle button");
+		b1 = new JButton("Start Game!");
 		b1.setVerticalTextPosition(AbstractButton.CENTER);
 		b1.setHorizontalTextPosition(AbstractButton.LEADING); //aka LEFT, for left-to-right locales
 		//b1.setMnemonic(KeyEvent.VK_D);
 		b1.setActionCommand("doTask");
 		add("South", b1);
+		b1.setFocusable(false);
 		b1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {  
-				System.out.println("doTask");            
+				//System.out.println("doTask");
+				id.startTimer();
 			};
 		});
 
@@ -466,11 +563,33 @@ public class ImageDrawingApplet extends JApplet {
 		}
 
 		GameAction p1A = null;
-		if (p1reqAction2 != null) {
-			p1A = p1reqAction2;
-		} else {
-			p1A = p1reqAction;
+//		if (p1reqAction2 != null) {
+//			p1A = p1reqAction2;
+//		} else {
+//			p1A = p1reqAction;
+//		}
+		Calendar last = null;
+		GameAction userAction = null;
+		for (int i = 0; i < this.userInput.length; i++) {			
+			if (this.userInput[i].isPressed()) {
+				if (i == 4) {
+					//
+					// If there is a Bullet for Tank 0 do not try to fire.
+					//
+					if (this.game.getGameState().getBullets()[0].isAlive()) {
+						continue;
+					}
+				}
+				if (last == null) {
+					last = this.userInput[i].getTimePressed();
+					userAction = this.userInput[i].getAction();
+				} else if (this.userInput[i].getTimePressed().after(last)) {
+					last = this.userInput[i].getTimePressed();
+					userAction = this.userInput[i].getAction();
+				}
+			}
 		}
+		p1A = userAction;
 		if (p1A != null) {
 			overrideActions[0] = p1A;
 		}
@@ -482,7 +601,7 @@ public class ImageDrawingApplet extends JApplet {
 
 		try {
 			for (int i = 0; i < realActions.length; i++) {
-					fileWriter.write(realActions[i].toString());
+				fileWriter.write(realActions[i].toString());
 			}
 			fileWriter.write("\n");
 		} catch (IOException e) {
@@ -566,39 +685,57 @@ public class ImageDrawingApplet extends JApplet {
 			//System.out.println("keyPressed");
 			int key = e.getKeyCode();
 
-			if (key == KeyEvent.VK_LEFT)
+			if (key == KeyEvent.VK_UP)
 			{
-				p1reqAction = new GameAction(GameAction.MOVE, GameAction.WEST);
+				userInput[0].setPressed(true);
+				userInput[0].setTimePressed(Calendar.getInstance());
 			}
 			else if (key == KeyEvent.VK_RIGHT)
 			{
-				p1reqAction = new GameAction(GameAction.MOVE, GameAction.EAST);
-			}
-			else if (key == KeyEvent.VK_UP)
-			{
-				p1reqAction = new GameAction(GameAction.MOVE, GameAction.GUI_NORTH);
+				userInput[1].setPressed(true);
+				userInput[1].setTimePressed(Calendar.getInstance());
 			}
 			else if (key == KeyEvent.VK_DOWN)
 			{
-				p1reqAction = new GameAction(GameAction.MOVE, GameAction.GUI_SOUTH);
+				userInput[2].setPressed(true);
+				userInput[2].setTimePressed(Calendar.getInstance());
+			}
+			else if (key == KeyEvent.VK_LEFT)
+			{
+				userInput[3].setPressed(true);
+				userInput[3].setTimePressed(Calendar.getInstance());
 			}
 			else if (key == KeyEvent.VK_SPACE)
 			{
-				p1reqAction2 = new GameAction(GameAction.FIRE, GameAction.GUI_SOUTH);
+				userInput[4].setPressed(true);
+				userInput[4].setTimePressed(Calendar.getInstance());
 			}
+			
+			//System.out.println("p1reqAction: "+p1reqAction);
 		}
 
 		public void keyReleased(KeyEvent e) {
 			int key = e.getKeyCode();
 
-			if (key == KeyEvent.VK_LEFT || key == KeyEvent.VK_RIGHT || 
-					key == KeyEvent.VK_UP ||  key == KeyEvent.VK_DOWN)
+			if (key == KeyEvent.VK_UP)
 			{
-				p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_SOUTH);
+				userInput[0].setPressed(false);
+			}
+			else if (key == KeyEvent.VK_RIGHT)
+			{
+				userInput[1].setPressed(false);
+			}
+			else if (key == KeyEvent.VK_DOWN)
+			{
+				userInput[2].setPressed(false);
+			}
+			else if (key == KeyEvent.VK_LEFT)
+			{
+				userInput[3].setPressed(false);
 			}
 			else if (key == KeyEvent.VK_SPACE)
 			{
-				p1reqAction2 = null;
+				userInput[4].setPressed(false);
 			}
 		}
 	}

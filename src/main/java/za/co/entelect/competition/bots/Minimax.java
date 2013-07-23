@@ -81,9 +81,9 @@ public class Minimax extends Bot {
 				// There is a bug where Action that start with NONE are suggested, leading to the tank standing still 
 				// for no reason. This might help, or a heuristic that encourages moving.
 				//				
-				if (tempAlpha > alpha) {
+//				if (tempAlpha > alpha) {
 					bestPath = tempBestPath;
-				}
+//				}
 				alpha = Math.max(alpha, tempAlpha);
 				deepestPly = depthLimit;
 				

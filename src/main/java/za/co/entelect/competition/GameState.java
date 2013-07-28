@@ -3,6 +3,10 @@ package za.co.entelect.competition;
 import java.awt.Point;
 import java.util.ArrayList;
 
+import org.datacontract.schemas._2004._07.RoTeD_BattleCity_Library.Actions;
+import org.datacontract.schemas._2004._07.RoTeD_BattleCity_Library.GameInfoTickBoard;
+
+
 import za.co.entelect.challenge.Action;
 
 
@@ -28,8 +32,8 @@ import za.co.entelect.challenge.Action;
 
 public class GameState {
 	public static final int H_MINIMAX = 0;
-	public static final int NEG_INF = -1000000;
-	public static final int POS_INF = 1000000;
+	public static final int NEG_INF = -2000000000;
+	public static final int POS_INF = 2000000000;
 	
 	public static final int STATUS_ACTIVE = 0;
 	public static final int STATUS_PLAYER1_WINS = 1;
@@ -38,7 +42,7 @@ public class GameState {
 	
 	public final static int tankSize = 5;
 	public final static int maxTurns = 200;
-
+	
 	private int[][] map;
 	private ArrayList<Collision> collisions;
 	private Tank[] tanks;
@@ -46,7 +50,11 @@ public class GameState {
 	private Base[] bases;
 	private int tickCount = 0;
 	private int status = 0;
-	public final static int tankSize = 5;
+	private boolean debugMode;
+	private boolean saveActions;
+	private ArrayList<GameState> actionLog;
+	
+	
 	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount, int status) {
 		super();
 		this.map = map;
@@ -56,6 +64,10 @@ public class GameState {
 		this.bases = bases;
 		this.tickCount = tickCount;
 		this.status = status;
+		
+		this.debugMode = false; 
+		this.saveActions = false;
+		this.actionLog = new ArrayList<GameState>();
 	}
 	public int[][] getMap() {
 		return map;
@@ -114,6 +126,25 @@ public class GameState {
 		} else {
 			return false;
 		}
+	}
+	public boolean isSaveActions() {
+		return saveActions;
+	}
+	public void setSaveActions(boolean saveActions) {
+		this.saveActions = saveActions;
+	}
+	public boolean isDebugMode() {
+		return debugMode;
+	}
+	public void setDebugMode(boolean debugMode) {
+		this.debugMode = debugMode;
+		this.setSaveActions(true);
+	}
+	public ArrayList<GameState> getActionLog() {
+		return actionLog;
+	}
+	public void setActionLog(ArrayList<GameState> actionLog) {
+		this.actionLog = actionLog;
 	}
 	public GameState clone() {
 		int[][] newMap = new int[this.map.length][this.map[0].length];
@@ -241,6 +272,16 @@ public class GameState {
 		ArrayList<Collision> newCollisions = new ArrayList<Collision>();
 		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, eGame.getCurrentTick(), GameState.STATUS_ACTIVE);
 	}
+	public static GameState fromRGame(GameInfoTickBoard rGame) {
+//		Tank[] newTanks = new Tank[4];
+//		Base[] newBases = new Base[2];
+//		Bullet[] newBullets = new Bullet[4];
+//		
+//		Board rBoard = rGame.getTickBoard();
+//		int[][] newMap = new int[rBoard.getBoardStates().length][rBoard.getBoardStates()[0].length];
+//		
+		return null;
+	}
 	public static za.co.entelect.challenge.Action XActionToEAction(GameAction xAction) {
 		Action eAction = null;
 		switch (xAction.type) {
@@ -256,6 +297,22 @@ public class GameState {
 			case GameAction.NONE:	eAction = Action.NONE;	break;
 		}
 		return eAction;
+	}
+	public static Actions XActionToRAction(GameAction xAction) {
+		Actions rAction = null;
+		switch (xAction.type) {
+			case GameAction.MOVE:
+				switch (xAction.direction) {
+					case GameAction.NORTH:	rAction = Actions.UP;		break;
+					case GameAction.EAST:	rAction = Actions.RIGHT;	break;
+					case GameAction.SOUTH:	rAction = Actions.DOWN;		break;
+					case GameAction.WEST:	rAction = Actions.LEFT;		break;
+				}
+				break;
+			case GameAction.FIRE:	rAction = Actions.FIRE;	break;
+			case GameAction.NONE:	rAction = Actions.NONE;	break;
+		}
+		return rAction;
 	}
 	public static int EDirectionToXRotation(za.co.entelect.challenge.Direction eDirection) {
 		int rotation = -1;
@@ -464,15 +521,19 @@ public class GameState {
 			//
 			// H levels:
 			// * 100k: 		Base existence
-			// * 60k - 20k:	Tank existence
-			// * 10k - 100:	Distance to enemy base
+			// * 80k - 40k:	Tank existence			
 			
 			//
-			// Calculate H
-			//			
+			// Subtract the current tickCount from the maximum to prevent procrastination. 
+			//
 			if (numBase1 != numBase2) {
-				h = 100000 * (numBase1 - numBase2);
-				return h;
+				h = 100000 * Math.abs(numBase1 - numBase2);
+				h += GameState.maxTurns - this.getTickCount();
+				if (numBase1 > numBase2) {
+					return h;
+				} else {
+					return -h;	
+				}				
 			}
 			
 			if (numTank1 != numTank2) {
@@ -488,8 +549,10 @@ public class GameState {
 			}
 			
 			//
-			// Being close to the enemy base line is a good thing
-			//			
+			// Being close to the enemy base line is a good thing. Bonus points for aiming in the right direction!
+			// A Tank on the base line or 1 unit away from it is rewarded in addition to the normal reward.
+			//
+			//TODO: base these rewards on true distances, not Manhattan distance
 			for (int i = 0; i < tanks.length; i++) {
 				if (!tanks[i].isAlive()) {
 					continue;
@@ -502,28 +565,82 @@ public class GameState {
 					target = new Point(getUnit(Unit.BASE1).getPosition());
 				}
 				
-				if (target.x < 2) {
-					target.x = 2;
-				}
-				if (target.x >= this.map[0].length - 2) {
-					target.x = this.map[0].length - 3;
-				}
-				if (target.y < 2) {
-					target.y = 2;
-				}				
-				if (target.y >= this.map.length - 2) {
-					target.y = this.map.length - 3;
-				}
-
-				// Tank offset
-				target.translate(-2, -2);
+				Point tankCenter = new Point(tanks[i].getPosition());
+				tankCenter.translate(2, 2);
+				boolean onTarget = false;
 				
-				if (i < 2) {
-					score = 200 - Util.mDist(tanks[i].getPosition(), target);					
+				if (target.y >= 2 && target.y < this.map.length - 2) {
+					score = (this.map.length - Math.abs(tankCenter.y - target.y))*3 - (Math.abs(tankCenter.x - target.x));					
+					if (Math.abs(tankCenter.y - target.y) <= 1) {
+						score += 3;
+					}
+					if (tankCenter.y == target.y) {
+						score += 3;
+						onTarget = true;
+					}
+				} else if (target.x >= 2 && target.x < this.map[0].length - 2) {
+					score = (this.map[0].length - Math.abs(tankCenter.x - target.x))*3 - (Math.abs(tankCenter.y - target.y));
+					if (Math.abs(tankCenter.x - target.x) <= 1) {
+						score += 3;
+					}
+					if (tankCenter.x == target.x) {
+						score += 3;
+						onTarget = true;
+					}
 				} else {
-					score = -200 + Util.mDist(tanks[i].getPosition(), target);
+					score = this.map.length + this.map[0].length - Util.mDist(tankCenter, target);	
+				}				
+				score *= 10;
+				
+				//
+				// Rotational award = 10
+				// Only applies if you're on the line
+				//
+				if (onTarget) {
+					int minDist = Integer.MAX_VALUE;
+					int bestRotation = 0;
+					for (int j = 0; j < 4; j++) {
+						Point potentialBullet = Util.movePointDist(tankCenter, j, 2);
+						int dist = Util.mDist(potentialBullet, target);
+						if (dist < minDist) {
+							minDist = dist;
+							bestRotation = j;
+						}
+					}				
+					if (tanks[i].getRotation() == bestRotation) {
+						score += 10;
+					}
 				}
-				h += score;
+				//TODO: There is a conflict between standing still and rotating to fire. 
+				//TODO: Bots still get stuck. 
+				
+				
+//				if (target.x < 2) {
+//					target.x = 2;
+//				}
+//				if (target.x >= this.map[0].length - 2) {
+//					target.x = this.map[0].length - 3;
+//				}
+//				if (target.y < 2) {
+//					target.y = 2;
+//				}				
+//				if (target.y >= this.map.length - 2) {
+//					target.y = this.map.length - 3;
+//				}
+//
+//				// Tank offset
+//				target.translate(-2, -2);
+//				
+//				if (i < 2) {
+//					score = 200 - Util.mDist(tanks[i].getPosition(), target);					
+//				} else {
+//					score = -200 + Util.mDist(tanks[i].getPosition(), target);
+//				}
+				if (i < 2) {				
+					h += score;
+				} else {
+					h -= score;
+				}
 			}
 			
 			//
@@ -533,23 +650,39 @@ public class GameState {
 				if (!bullets[i].isAlive()) {
 					continue;
 				}
+				//if (i == 2 && bullets[i].getPosition().y == 7 && (bullets[i].getRotation() % 2 == 1)) {
+				if (i == 0 && bullets[i].getPosition().x == 14 && (bullets[i].getRotation() % 2 == 1)) {
+					int abc = 0;
+					abc = abc == 0 ? abc++ : abc--;
+				}
 				int score = 0;
 				int walls = 0;
 				int empty = 0;
 				Point start = new Point(bullets[i].getPosition());
 				Point end = Util.movePointDist(bullets[i].getPosition(), bullets[i].getRotation(), 1000, this);
 				while(!start.equals(end)) {
+					if (start.x > end.x) {
+						start.x--;
+					} else if (start.x < end.x) {
+						start.x++;
+					} else if (start.y > end.y) {
+						start.y--;
+					} else {
+						start.y++;
+					}
 					if (this.map[start.y][start.x] == Unit.EMPTY) {
 						empty++;
 					} else if (this.map[start.y][start.x] == Unit.WALL) {
 						walls++;
 					} else {
 						if (Unit.isBase(this.map[start.y][start.x])) {
-							if (Unit.BASE1 + i/2 == this.map[start.y][start.x] && walls == 0) {
-								//
-								// Firing at own base!
-								//
-								score = -(10000 - empty);
+							if (Unit.BASE1 + i/2 == this.map[start.y][start.x]) {
+								if (walls == 0) {
+									//
+									// Firing at own base!
+									//
+									score = -(10000 - empty);
+								}
 							} else {
 								score = 10000 - walls*10 - empty;
 							}
@@ -580,15 +713,6 @@ public class GameState {
 							break;
 						}
 					}
-					if (start.x > end.x) {
-						start.x--;
-					} else if (start.x < end.x) {
-						start.x++;
-					} else if (start.y > end.y) {
-						start.y--;
-					} else {
-						start.y++;
-					}
 				}
 				if (i < 2) {
 					h += score;
@@ -609,7 +733,7 @@ public class GameState {
 				Point currentP = tanks[i].getPosition();
 				Point prevP = tanks[i].getPrevPosition();
 				if (currentP.equals(prevP)) {
-					score  = -10;
+					score  = -9;
 				}
 				if (i < 2) {
 					h += score;
@@ -621,19 +745,27 @@ public class GameState {
 		}		
 		return h;
 	}
-	//TODO: Assume bullet explosions damage only walls
-	//TODO: Assume that explosions happen when a bullet hits anything
-	//TODO: Assume bullets that hit the edge of the map disappear
-	//TODO: Assume that more than one bullet can hit the same object at the same time (e.g a WALL)
-	//TODO: Assume a Tank can move into an area that had a wall or base (NOT tank) in it the previous round
-	//TODO: Assume Tanks move in a 100% turn based way
-	//TODO: Assume when a Tank tries to move into a bullet it is destroyed
-	//TODO: Assume Bullets are moved twice at the start of the Round
-	//TODO: Assume you can always have one bullet. A tank can fire a bullet if his bullet will be destroyed next round.
-	//TODO: Assume you cannot fire on the edge of the map.
-	//TODO: Assume Bullets will collide if they never share a space
-	//TODO: Assume that the base will always be on the edge of the map.
-	public void nextTick() {
+	//TODO: 1.  Assume bullet explosions damage only walls
+	//TODO: 2.  Assume that explosions happen when a bullet hits anything
+	//TODO: 3.  Assume bullets that hit the edge of the map disappear
+	//TODO: 4.  Assume that more than one bullet can hit the same object at the same time (e.g a WALL)
+	//TODO: 5.  Assume a Tank can move into an area that had a wall or base (NOT tank) in it the previous round
+	//TODO: 6.  Assume Tanks move in a 100% turn based way
+	//TODO: 7.  Assume when a Tank tries to move into a bullet it is destroyed
+	//TODO: 8.  Assume Bullets are moved twice at the start of the Round
+	//TODO: 9.  Assume you can always have one bullet. A tank can fire a bullet if his bullet will be destroyed next round.
+	//TODO: 10. Assume you cannot fire on the edge of the map.
+	//TODO: 11. Assume Bullets will collide if they never share a space
+	//TODO: 12. Assume that the base will always be on the edge of the map.
+	//TODO: 13. In cases where Bullet collisions involve Tanks, the Tanks are always destroyed. This probably isn't correct but it is safe.
+	public void nextTick() {		
+		//
+		// Optionally record old GameState
+		//
+		if (this.saveActions) {
+			this.actionLog.add(this.clone());
+		} 
+		
 		this.tickCount++;
 		
 		//
@@ -641,13 +773,21 @@ public class GameState {
 		//
 		collisions.clear();
  
-		ArrayList<Point> deadListPoint = new ArrayList<Point>(); 
+		//
+		// A list of all points (excluding Tanks) that was destoryed by Bullets.
+		//
+		ArrayList<Point> deadListPoint = new ArrayList<Point>();
+		
+		//
+		// A list of all points where Bullets collided.
+		//
+		ArrayList<Point> bulletCollisionList = new ArrayList<Point>();
 
 		//
 		// Bullets move twice
 		//
-		moveBullets(deadListPoint);
-		moveBullets(deadListPoint);
+		moveBullets(deadListPoint, bulletCollisionList);
+		moveBullets(deadListPoint, bulletCollisionList);
 		
 		//
 		// Check tank moves
@@ -760,9 +900,9 @@ public class GameState {
 		}		
 
 		//
-		// Check if any tanks have been hit by old Bullets
+		// Check if any tanks have been hit by old Bullets or Bullet collisions.
 		//
-		destroyTankBulletHits();
+		destroyTankBulletHits(bulletCollisionList);
 
 		//
 		// Fire new Bullets
@@ -805,7 +945,7 @@ public class GameState {
 		//
 		// Destroy everything that was hit by a new Bullet
 		//
-		destroyNonTankBulletHits(deadListPoint);
+		destroyNonTankBulletHits(deadListPoint, bulletCollisionList);
 
 		//
 		// The game might be over now. Possibly return
@@ -814,7 +954,7 @@ public class GameState {
 		//
 		// Check if any tanks have been hit by old Bullets
 		//
-		destroyTankBulletHits();		
+		destroyTankBulletHits(bulletCollisionList);		
 		
 		//TODO: test bullets following each other head to tail
 		//TODO: test tanks following each other head to tail. Will fail
@@ -842,8 +982,27 @@ public class GameState {
 				this.status = STATUS_PLAYER1_WINS;
 			}
 		}
+		
+		//
+		// Test that Tank area == Tank ID 
+		//
+		if (this.isDebugMode()) {
+			for (int i = 0; i < this.tanks.length; i++) {
+				t = this.tanks[i];
+				if (!t.isAlive()) {
+					continue;
+				}
+				for (int y = t.getPosition().y; y < t.getPosition().y + tankSize; y++) {
+					for (int x = t.getPosition().x; x < t.getPosition().x + tankSize; x++) {
+						if (this.map[y][x] != Unit.TANK1A + i) {
+							System.err.println("FATAL ERROR: A Tank's area must be set to that Tank's ID!");
+						}
+					}
+				}
+			}
+		} 
 	}
-	private void moveBullets(ArrayList<Point> deadListPoint) {
+	private void moveBullets(ArrayList<Point> deadListPoint, ArrayList<Point> bulletCollisionList) {
 		
 		Point[] oldBulletPositions = new Point[4];
 		for (int i = 0; i < oldBulletPositions.length; i++) {
@@ -916,9 +1075,9 @@ public class GameState {
 		//
 		// Destroy everything that was hit by an old Bullet. Tanks are hit later.
 		//
-		destroyNonTankBulletHits(deadListPoint);
+		destroyNonTankBulletHits(deadListPoint, bulletCollisionList);
 	}
-	private void destroyTankBulletHits() {
+	private void destroyTankBulletHits(ArrayList<Point> bulletCollisionList) {
 		Tank t = null;
 		for (int i = 0; i < this.tanks.length; i++) {
 			t = this.tanks[i];
@@ -932,6 +1091,17 @@ public class GameState {
 						destroy = true;
 						y = t.getPosition().y + tankSize;
 						break;
+					}
+				}
+			}
+			if (!destroy) {
+				for (Point collision : bulletCollisionList) {
+					if (getTank(collision) == Unit.TANK1A + i) {
+						destroy = true;
+						//
+						// Fill in the Tank on this point to enable destruction to complete.
+						//
+						this.map[collision.y][collision.x] = Unit.TANK1A + i;
 					}
 				}
 			}
@@ -953,11 +1123,14 @@ public class GameState {
 			}
 		}
 	}
-	private void destroyNonTankBulletHits(ArrayList<Point> deadListPoint) {
+	private void destroyNonTankBulletHits(ArrayList<Point> deadListPoint, ArrayList<Point> bulletCollisionList) {
 		Point p;
 		for (int i = 0; i < deadListPoint.size(); i++) {
 			p = deadListPoint.get(i);
 			if (!Unit.isEmptyOrWall(this.map[p.y][p.x])) {
+				if (Unit.isBullet(this.map[p.y][p.x])) {
+					bulletCollisionList.add(new Point(p));
+				}
 				Unit obstacle = getUnit(this.map[p.y][p.x]);
 				obstacle.setAlive(false);
 			}
@@ -978,11 +1151,16 @@ public class GameState {
 				// The Bullet has hit a Base, a Wall or another Bullet
 				//
 				
-				//if (obstacleUnitCode == Unit.WALL) {
+				//
+				// If the obstacle is a Bullet and there is a tank underneath 
+				//
+				//if (obstacleUnitCode == Unit.WALL) {}
 				
 				//
 				// Destroy this Unit and 5 perpendicular WALL Units
 				//
+				
+				//if (obstacleUnitCode == Unit.WALL) {
 				if (me.getRotation() == GameAction.NORTH || me.getRotation() == GameAction.SOUTH) {
 					deadListPoint.add(nextP);
 					for (int x = nextP.x - (tankSize/2); x <= nextP.x + (tankSize/2); x++) {

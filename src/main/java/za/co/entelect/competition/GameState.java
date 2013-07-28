@@ -36,6 +36,9 @@ public class GameState {
 	public static final int STATUS_PLAYER2_WINS = 2;
 	public static final int STATUS_DRAW = 3;
 	
+	public final static int tankSize = 5;
+	public final static int maxTurns = 200;
+
 	private int[][] map;
 	private ArrayList<Collision> collisions;
 	private Tank[] tanks;

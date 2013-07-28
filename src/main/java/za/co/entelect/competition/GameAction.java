@@ -25,6 +25,13 @@ public class GameAction {
 		this.level = -1;
 	}
 	
+	public GameAction(GameAction gameAction) {
+		super();
+		this.type = gameAction.type;
+		this.direction = gameAction.direction;
+		this.level = -1;
+	}
+
 	public GameAction clone() {
 		return new GameAction(this.type, this.direction);
 	}

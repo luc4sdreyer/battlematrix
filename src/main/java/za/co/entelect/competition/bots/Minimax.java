@@ -11,13 +11,14 @@ public class Minimax extends Bot {
 	private long timer;
 	protected boolean ignoreTimeLimit;
 	protected int maxDepthLimit;
-	protected int debugLevel;
+	private boolean debugMode;
 	
 	public Minimax(int playerIndex) {
 		super(playerIndex);
 		this.ignoreTimeLimit = false;
 		this.maxDepthLimit = 4;
 		this.debugLevel = 2;
+		this.debugMode = false;
 	}
 
 	@Override

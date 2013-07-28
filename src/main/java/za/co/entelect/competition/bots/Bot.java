@@ -7,6 +7,8 @@ public abstract class Bot {
 	private int playerIndex;
 	private String name;
 	protected GameAction[] gameActions;
+	protected int debugLevel;
+	
 	public Bot(int playerIndex) {
 		this.playerIndex = playerIndex;
 	}
@@ -31,6 +33,12 @@ public abstract class Bot {
 	}
 	public void setGameActions(GameAction[] gameActions) {
 		this.gameActions = gameActions;
+	}
+	public int getDebugLevel() {
+		return debugLevel;
+	}
+	public void setDebugLevel(int debugLevel) {
+		this.debugLevel = debugLevel;
 	}
 	public abstract GameAction[] getActions(GameState gameState, int timeLimitMS);
 }

@@ -121,7 +121,7 @@ public class Game {
 		
 		this.gameState.nextTick();
 		
-		if (this.gameState.getTickCount() > 200) {
+		if (this.gameState.getTickCount() > GameState.maxTurns) {
 			this.gameState.setStatus(GameState.STATUS_DRAW);
 		}
 		
@@ -189,44 +189,47 @@ public class Game {
 		ArrayList<Collision> collisions = new ArrayList<Collision>();
 		for (int y = 0; y < map.length; y++) {
 			for (int x = 0; x < map[0].length; x++) {
-				if (file.get(y).charAt(x) == '_') {
+				char c = file.get(y).charAt(x);
+				if (c == '_') {
 					map[y][x] = 0;
-				} else if (file.get(y).charAt(x) == '#') {
+				} else if (c == '#') {
 					map[y][x] = 1;
-				} else if (file.get(y).charAt(x) == 'A') {
+				} else if (c == 'A') {
 					if (tanks[0] == null) {
-						tanks[0] = new Tank(new Point(x,y), 2, null);
+						tanks[0] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
 					} else {
 						map[y][x] = 0;
 					}
-				} else if (file.get(y).charAt(x) == 'B') {
+				} else if (c == 'B') {
 					if (tanks[1] == null) {
-						tanks[1] = new Tank(new Point(x,y), 2, null);
+						tanks[1] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
 					} else {
 						map[y][x] = 0;
 					}
-				} else if (file.get(y).charAt(x) == 'X') {
+				} else if (c == 'X') {
 					if (tanks[2] == null) {
-						tanks[2] = new Tank(new Point(x,y), 2, null);
+						tanks[2] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
 					} else {
 						map[y][x] = 0;
 					}
-				} else if (file.get(y).charAt(x) == 'Y') {
+				} else if (c == 'Y') {
 					if (tanks[3] == null) {
-						tanks[3] = new Tank(new Point(x,y), 2, null);
+						tanks[3] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
 					} else {
 						map[y][x] = 0;
 					}
-				} else if (file.get(y).charAt(x) == 'C') {
+				} else if (c == 'C') {
 					bases[0] = new Base(new Point(x,y), 2);
 					map[y][x] = Unit.BASE1;
-				} else if (file.get(y).charAt(x) == 'Z') {
+				} else if (c == 'Z') {
 					bases[1] = new Base(new Point(x,y), 2);
 					map[y][x] = Unit.BASE2;
-				//} else if (file.get(y).charAt(x) == '*') {
+				//} else if (c == '*') {
 				//	bullets[i] = new Bullet(new Point(x,y), 2);
-				} else if (file.get(y).charAt(x) != '_') {
-					System.err.println("UNKNOWN SYMBOL IN MAP.TXT: "+file.get(y).charAt(x));
+				} else if (c == '_' || c == '0' || c == '1' || c == '2' || c == '3') {
+					map[y][x] = 0;
+				} else {
+					System.err.println("UNKNOWN SYMBOL IN MAP.TXT: "+c);
 				}
 			}
 		}
@@ -248,6 +251,17 @@ public class Game {
 		return newGame;
 	}
 	
+	private static int getRotationFromChar(char c) {
+		int rotation = 2;		
+		if (Character.isDigit(c)) {
+			int n = Character.getNumericValue(c);
+			if (n >= 0 && n <= 3) {
+				rotation = n;
+			}
+		}
+		return rotation;
+	}
+
 	public za.co.entelect.challenge.Game[] getEGame() {
 		return null;
 	}

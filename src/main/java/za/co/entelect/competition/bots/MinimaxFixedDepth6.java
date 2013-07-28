@@ -3,12 +3,12 @@ package za.co.entelect.competition.bots;
 import za.co.entelect.competition.GameAction;
 import za.co.entelect.competition.GameState;
 
-public class MinimaxFixedDepth extends Minimax {	
-	public MinimaxFixedDepth(int playerIndex) {
+public class MinimaxFixedDepth6 extends Minimax {	
+	public MinimaxFixedDepth6(int playerIndex) {
 		super(playerIndex);
 		this.ignoreTimeLimit = true;
-		this.maxDepthLimit = 2;
-		this.debugLevel = 0;
+		this.maxDepthLimit = 6;
+		this.debugLevel = 1;
 	}
 
 	@Override

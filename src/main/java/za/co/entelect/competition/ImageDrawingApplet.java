@@ -102,7 +102,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 	private int timercount = 0;
 	private GameState previousGameState = null;
 	private GameState currentGameState = null;
-	private GameState nextGameState = null;
+	public GameState nextGameState = null;
 	private double drawScale = 3;
     private Timer timer;
     private final int DELAY;
@@ -394,26 +394,41 @@ class ImageDrawingComponent extends Component implements ActionListener {
 			// Time to update the gameState 
 			timercount = 0;
 
-			if (this.nextGameState == null) {
-				System.err.println("nextGameState == null at frame update");
-				int[] a = new int[1]; a[1] = 1;
-			} else {
-				if (this.currentGameState != null) {
-					this.previousGameState = this.currentGameState.clone();
+			if (ImageDrawingApplet.absoluteTiming) {
+				checkAndUpdateGameState();
+				//System.out.println("previousGameState: "+this.previousGameState);
+				//System.out.println("currentGameState: "+this.currentGameState);
+				//System.out.println("nextGameState: "+this.nextGameState);
+				
+				synchronized(syncObject) {
+				    syncObject.notify();
 				}
-				this.currentGameState = this.nextGameState.clone();
-				this.nextGameState = null;
-			}
-			//System.out.println("previousGameState: "+this.previousGameState);
-			//System.out.println("currentGameState: "+this.currentGameState);
-			//System.out.println("nextGameState: "+this.nextGameState);
-			
-			synchronized(syncObject) {
-			    syncObject.notify();
+			} else {
+//				synchronized(syncObject) {
+//				    try {
+//				    	System.out.println("Painter waiting");
+//				        syncObject.wait();
+//				    } catch (InterruptedException e1) {
+//				    	e1.printStackTrace();
+//				    }
+//				}
 			}
 			
 		}
         repaint();
+	}
+
+	public void checkAndUpdateGameState() {
+		if (this.nextGameState == null) {
+			System.err.println("nextGameState == null at frame update");
+			int[] a = new int[1]; a[1] = 1;
+		} else {
+			if (this.currentGameState != null) {
+				this.previousGameState = this.currentGameState.clone();
+			}
+			this.currentGameState = this.nextGameState.clone();
+			this.nextGameState = null;
+		}
 	}
 
 	public void startTimer() {
@@ -423,133 +438,99 @@ class ImageDrawingComponent extends Component implements ActionListener {
 
 public class ImageDrawingApplet extends JApplet {
 	
-	private static final long serialVersionUID = 5023415827458014290L;
-	JButton b1;
-	final ImageDrawingComponent id;
-	final int frames = 3;
-	//int fps = 3;
-	int DELAY = 150/frames;
-	long sleepTime = (long)(DELAY*frames*1);
-	boolean nextTick = false;
-	long stateTimeNS = 0;
-	Object syncObject;							// syncObject is used to sync the animation and logic threads.
-	BufferedWriter fileWriter;
-
-	ArrayList<GameAction>[] moveList;
-    private GameAction p1reqAction;
-    private GameAction p1reqAction2;
-    private UserInput[] userInput;
-    
-    
+	//TODO: Just a marker!
+	public final static int DELAY = 500;
+	public final static boolean absoluteTiming = false;
 	
+	public static final long serialVersionUID = 5023415827458014290L;
+	public JButton b1;
+	public final ImageDrawingComponent id;
+	public final int frames = 3;
+	public int frameTime = DELAY/frames;
+	public long sleepTime = (long)(frameTime*frames*1);
+	public boolean nextTick = false;
+	public long stateTimeNS = 0;
+	public Object syncObject;							// syncObject is used to sync the animation and logic threads.
+	public BufferedWriter fileWriter;
+	public ArrayList<GameAction>[] moveList;
+    //private GameAction p1reqAction;
+    //private GameAction p1reqAction2;
+    private UserInput[] userInput;   
 	//static GameState gameState;
     Game game;
 
-	public ImageDrawingApplet () {
-		syncObject = new Object();
-		id = new ImageDrawingComponent(DELAY, syncObject);
-        addKeyListener(new TAdapter());
-        p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
-        this.userInput = new UserInput[5];
-       
-        this.userInput[0] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_NORTH), false);
-        this.userInput[1] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.EAST), false);
-        this.userInput[2] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_SOUTH), false);
-        this.userInput[3] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.WEST), false);
-        this.userInput[4] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.FIRE, GameAction.GUI_NORTH), false);
-        
-
-		setFocusable(true);
-        
-        File currentMoveList = new File("movelists\\" + Util.date.format(Calendar.getInstance().getTime()) + ".txt");
-        try {
-			fileWriter = new BufferedWriter(new FileWriter(currentMoveList));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	public void setPreviousGameState(GameState gameState) {
-		id.setPreviousGameState(gameState);
-	}
-	public void setCurrentGameState(GameState gameState) {
-		id.setCurrentGameState(gameState);
-	}
-	
-	public void repaint() {
-		id.repaint();
-	}
-
-	public void init() {
-		add("Center", id);
-
-		b1 = new JButton("Start Game!");
-		b1.setVerticalTextPosition(AbstractButton.CENTER);
-		b1.setHorizontalTextPosition(AbstractButton.LEADING); //aka LEFT, for left-to-right locales
-		//b1.setMnemonic(KeyEvent.VK_D);
-		b1.setActionCommand("doTask");
-		add("South", b1);
-		b1.setFocusable(false);
-		b1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {  
-				//System.out.println("doTask");
-				id.startTimer();
-			};
-		});
-
-	}
-
 	public static void main(String s[]) {
 		JFrame f = new JFrame("ImageDrawing");
-		final ImageDrawingApplet id = new ImageDrawingApplet();
+		final ImageDrawingApplet mainGUI = new ImageDrawingApplet();
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 				try {
-					id.fileWriter.close();
+					mainGUI.fileWriter.close();
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
 				System.exit(0);
 			}
 		});
+		
+		//java.lang.Runtime.getRuntime().addShutdownHook(Thread.currentThread());
 
 		
-		id.init();
-		f.add("Center", id);
+		mainGUI.init();
+		f.add("Center", mainGUI);
 		f.pack();
 		f.setVisible(true);
-		id.game = new Game(	"za.co.entelect.competition.bots.Random",
-							"za.co.entelect.competition.bots.Minimax",
+		mainGUI.game = new Game(
+							"za.co.entelect.competition.bots.Random",
+							//"za.co.entelect.competition.bots.Random",
+							//"za.co.entelect.competition.bots.Minimax",
+							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
+							"za.co.entelect.competition.bots.MinimaxFixedDepth4",
 							"map.txt",
 							false);
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
 //		gameState.getTanks()[3].setAlive(false);
 		
-		id.moveList = loadMoveList();
+		mainGUI.moveList = loadMoveList();
 		
-		id.setPreviousGameState(id.game.getGameState().clone());
-		id.setCurrentGameState(id.game.getGameState().clone());
-		id.repaint();
-		id.stateTimeNS = System.nanoTime();
-		id.generateNextGameState();
+		mainGUI.setPreviousGameState(mainGUI.game.getGameState().clone());
+		mainGUI.setCurrentGameState(mainGUI.game.getGameState().clone());
+		mainGUI.repaint();
+		
+		if (ImageDrawingApplet.absoluteTiming) {
+			mainGUI.stateTimeNS = System.nanoTime();
+			mainGUI.generateNextGameState();
+		}
 
 		
 		while (true) {
-			synchronized(id.syncObject) {
-			    try {
-			        // Calling wait() will block this thread until another thread
-			        // calls notify() on the object.
-			        id.syncObject.wait();
-			    } catch (InterruptedException e) {
-			        // Happens if someone interrupts your thread.
-			    	e.printStackTrace();
-			    }
+			if (ImageDrawingApplet.absoluteTiming) {
+				synchronized(mainGUI.syncObject) {
+				    try {
+				        // Calling wait() will block this thread until another thread
+				        // calls notify() on the object.
+				        mainGUI.syncObject.wait();
+				    } catch (InterruptedException e) {
+				        // Happens if someone interrupts your thread.
+				    	e.printStackTrace();
+				    }
+				}
+				mainGUI.stateTimeNS = System.nanoTime();
+				mainGUI.generateNextGameState();
+			} else {
+				//synchronized(id.syncObject) {
+		    	//System.out.println("Engine notify.");
+				//id.syncObject.notify();
+				mainGUI.stateTimeNS = System.nanoTime();
+				mainGUI.generateNextGameState();
+				mainGUI.repaint();
+				mainGUI.id.checkAndUpdateGameState();
 			}
-			id.stateTimeNS = System.nanoTime();
-			id.generateNextGameState();
 		}
 		
 	}
+	 
 	
 	public void generateNextGameState() {
 		//Util.print("Applet got timer update!");
@@ -616,17 +597,81 @@ public class ImageDrawingApplet extends JApplet {
 //				e1.printStackTrace();
 //			}	
 //		}
+		if (!ImageDrawingApplet.absoluteTiming) {			
+			try {
+				Thread.sleep(DELAY);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+		}
 		id.setNextGameState(this.game.getGameState());//, updateDelay);
 		timeLeft = (int) ((sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000);
 		
 		if (this.game.getGameState().getStatus() != GameState.STATUS_ACTIVE) {
 			System.out.println(this.game.getGameState().getStatusString());
 		}
+		System.out.println("Current H: " + this.game.getGameState().getHeuristicValue(GameState.H_MINIMAX));
 		//System.out.println("timeLeft: "+timeLeft);
 		//Util.print("NextGameState Generated successfullly");
 	}
 
+
+
+	public ImageDrawingApplet () {
+		syncObject = new Object();
+		id = new ImageDrawingComponent(frameTime, syncObject);
+        addKeyListener(new TAdapter());
+        //p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
+        this.userInput = new UserInput[5];
+       
+        this.userInput[0] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_NORTH), false);
+        this.userInput[1] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.EAST), false);
+        this.userInput[2] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_SOUTH), false);
+        this.userInput[3] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.WEST), false);
+        this.userInput[4] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.FIRE, GameAction.GUI_NORTH), false);
+        
+
+		setFocusable(true);
+        
+        File currentMoveList = new File("movelists\\" + Util.date.format(Calendar.getInstance().getTime()) + ".txt");
+        try {
+			fileWriter = new BufferedWriter(new FileWriter(currentMoveList));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	public void setPreviousGameState(GameState gameState) {
+		id.setPreviousGameState(gameState);
+	}
+	public void setCurrentGameState(GameState gameState) {
+		id.setCurrentGameState(gameState);
+	}
 	
+	public void repaint() {
+		id.repaint();
+	}
+
+
+	public void init() {
+		add("Center", id);
+
+		b1 = new JButton("Start Game!");
+		b1.setVerticalTextPosition(AbstractButton.CENTER);
+		b1.setHorizontalTextPosition(AbstractButton.LEADING); //aka LEFT, for left-to-right locales
+		//b1.setMnemonic(KeyEvent.VK_D);
+		b1.setActionCommand("doTask");
+		add("South", b1);
+		b1.setFocusable(false);
+		b1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {  
+				//System.out.println("doTask");
+				if (ImageDrawingApplet.absoluteTiming) {
+					id.startTimer();
+				}
+			};
+		});
+
+	}
 
 	public static ArrayList<GameAction>[] loadMoveList() {
 		Scanner in = null;

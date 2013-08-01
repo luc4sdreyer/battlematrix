@@ -339,30 +339,46 @@ public class GameState {
 		}
 	}
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
+		ArrayList<char[]> out = new ArrayList<char[]>(this.map.length);
 		for (int y = 0; y < this.map.length; y++) {
+			char[] line = new char[this.map[0].length];
+			out.add(line);
 			for (int x = 0; x < this.map[0].length; x++) {
 				switch (this.map[y][x]) {
-				case 0: 	sb.append('_'); 	break;
-				case 1: 	sb.append('#'); 	break;
-				case 2: 	sb.append('A'); 	break;
-				case 3: 	sb.append('B'); 	break;
-				case 4: 	sb.append('X'); 	break;
-				case 5: 	sb.append('Y'); 	break;
-				case 6: 	sb.append('1'); 	break;
-				case 7: 	sb.append('2'); 	break;
-				case 8: 	sb.append('3'); 	break;
-				case 9: 	sb.append('4'); 	break;
-				case 10: 	sb.append('C'); 	break;
-				case 11: 	sb.append('Z'); 	break;
-				default: 	sb.append("UNKNOWN"); 	break;
+				case 0: 	line[x] = '_'; 	break;
+				case 1: 	line[x] = '#'; 	break;
+				case 2: 	line[x] = 'A'; 	break;
+				case 3: 	line[x] = 'B'; 	break;
+				case 4: 	line[x] = 'X'; 	break;
+				case 5: 	line[x] = 'Y'; 	break;
+				case 6: 	line[x] = '1'; 	break;
+				case 7: 	line[x] = '2'; 	break;
+				case 8: 	line[x] = '3'; 	break;
+				case 9: 	line[x] = '4'; 	break;
+				case 10: 	line[x] = 'C'; 	break;
+				case 11: 	line[x] = 'Z'; 	break;
+				default: 	line[x] = '?'; 	break;
 				}
 			}
-			if (y == this.map.length - 1) {
-				sb.append(Integer.toString(tickCount));
-			}
-			sb.append("\n");
+//			if (y == this.map.length - 1) {
+//				sb.append(" "+Integer.toString(tickCount));
+//			}
 		}
+		for (int i = 0; i < this.tanks.length; i++) {
+			if (!this.tanks[i].isAlive()) {
+				continue;
+			}
+			Tank t = this.tanks[i];
+			out.get(t.getPosition().y)[t.getPosition().x + 1] = (char) (t.getRotation() + '0'); 
+		}
+		StringBuilder sb = new StringBuilder();
+		for (int y = 0; y < out.size(); y++) {
+			for (int x = 0; x < out.get(y).length; x++) {
+				sb.append(out.get(y)[x]);
+			}
+			sb.append('\n');			
+		}
+		
 		return sb.toString();
 	}
 //	public ArrayList<Point> getTankMoves(Point p) {

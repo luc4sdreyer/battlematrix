@@ -11,11 +11,11 @@ public class Random extends Bot {
 
 	@Override
 	public GameAction[] getActions(GameState gameState, int timeLimitMS) {
-		return Random.getActionsStatic(gameState, timeLimitMS);
+		return Random.getActionsStatic();
 	}
 	
 
-	public static GameAction[] getActionsStatic(GameState gameState, int timeLimitMS) {
+	public static GameAction[] getActionsStatic() {
 		GameAction[] next = new GameAction[2];
 		
 		int action = ((int)(Math.random()*3))+10;

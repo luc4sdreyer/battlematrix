@@ -25,8 +25,8 @@ public class Minimax extends Bot {
 	public GameAction[] getActions(GameState gameState, int timeLimitMS) {
 		ArrayList<GameAction[]> actions = minimaxID(gameState, false, timeLimitMS);
 		if (actions.isEmpty()) {
-			actions.add(Random.getActionsStatic(gameState, timeLimitMS));
-			actions.add(Random.getActionsStatic(gameState, timeLimitMS));
+			actions.add(Random.getActionsStatic());
+			actions.add(Random.getActionsStatic());
 			System.out.println("\tMinimax using RANDOM move instead.");
 		}
 		GameAction[] action = actions.get(getPlayerIndex());

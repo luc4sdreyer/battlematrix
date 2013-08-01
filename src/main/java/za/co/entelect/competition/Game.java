@@ -152,6 +152,8 @@ public class Game {
 			case GameState.STATUS_DRAW:				result.score.wld[2]++;	break;
 			default:								result.score.wld = null;
 		}
+		
+		result.score.numTicks = this.getGameState().getTickCount();
 	}
 	
 	public static ArrayList<String> readGameFromFile(String filename) {

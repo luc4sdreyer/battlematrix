@@ -10,32 +10,15 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-class Score {
-	String[] name;
-	int[] wld;
-
-	public Score() {
-		this.name = new String[2];
-		this.wld = new int[3];
-	}
-}
-
-class Result {	
-	public Score score;
-	public Result() {
-		this.score = new Score();
-	}
-	public String toString() {
-		String output = score.name[0]+" vs "+score.name[1]+". W/D/L:" + score.wld[0]+" "+score.wld[2]+" "+score.wld[1];
-		return output;
-	}
-}
-
 public class Simulator implements Runnable {
+	public static final boolean dbMode = false;
+	public static final int numThreads = 5;
+	public static Connection connection = null;
+	
 	private Game game;
 	private ArrayList<GameAction>[] moveList;
 	private int timeLimit = 100;
-	private Result result;
+	private Result result;	
 
 	public Simulator(Result result, ArrayList<String> file, ArrayList<GameAction>[] moveList, String bot1, String bot2) {
 		this.game = new Game(
@@ -52,7 +35,7 @@ public class Simulator implements Runnable {
 		this.moveList = moveList;
 		this.result = result;
 		
-		//this.game.getGameState().setDebugMode(true);
+		this.game.getGameState().setDebugMode(true);
 	}
 
 	@Override
@@ -74,11 +57,9 @@ public class Simulator implements Runnable {
 		this.game.generateResult(this.result);
 	}
 
-	public static final boolean dbMode = true;
-	public static final int numThreads = 5;
-	public static Connection connection = null;
 
-	public static void main(String[] args) {
+	public static void main(String[] args) {		
+		int a = Util.zTable.length;
 
 		int numSims = 1;
 		if (dbMode) {
@@ -113,7 +94,7 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 10000;
+				numTests = 30000;
 			}
 			long time = System.nanoTime();
 			ExecutorService executor = Executors.newFixedThreadPool(numThreads);
@@ -140,10 +121,10 @@ public class Simulator implements Runnable {
 					;
 
 			String bot2 =
-					//"za.co.entelect.competition.bots.Random"
+					"za.co.entelect.competition.bots.Random"
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
-					"za.co.entelect.competition.bots.MinimaxFixedDepth4"
+					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
 					;
 
 			ArrayList<Result> results = new ArrayList<Result>();
@@ -164,6 +145,8 @@ public class Simulator implements Runnable {
 
 			HashMap<String, int[]> resultMap = new HashMap<String, int[]>();
 			int[] wld = null;
+			int numTicks = 0;
+			int numGames = results.size();
 			for (Result result : results) {
 				String name = result.score.name[0] + " vs " + result.score.name[1];
 				if (resultMap.containsKey(name)) {
@@ -173,7 +156,8 @@ public class Simulator implements Runnable {
 					wld[2] += result.score.wld[2];    
 				} else {
 					resultMap.put(name, result.score.wld);
-				}	
+				}
+				numTicks += result.score.numTicks;
 			}
 
 			for (Entry<String, int[]> e : resultMap.entrySet()) {
@@ -204,7 +188,9 @@ public class Simulator implements Runnable {
 			//		System.out.println("W/D/L:");
 			//		System.out.println(wld[0]+" "+wld[2]+" "+wld[1]);
 
-			System.out.println("Total time: "+(System.nanoTime() - time)/1000000 + "ms");
+			int milliSeconds = (int) ((System.nanoTime() - time)/1000000);
+			System.out.println("Total time: " + milliSeconds + "ms");
+			System.out.println("Speed: " + numGames * 1000 / milliSeconds + " games/s, " + numTicks * 1000 / milliSeconds + " ticks/s");
 		}
 		if (dbMode) {
 			try {
@@ -213,5 +199,29 @@ public class Simulator implements Runnable {
 				e.printStackTrace();
 			}
 		}
+	}
+}
+
+
+class Score {
+	String[] name;
+	int[] wld;
+	int numTicks;
+
+	public Score() {
+		this.name = new String[2];
+		this.wld = new int[3];
+		this.numTicks = 0;
+	}
+}
+
+class Result {	
+	public Score score;
+	public Result() {
+		this.score = new Score();
+	}
+	public String toString() {
+		String output = score.name[0]+" vs "+score.name[1]+". W/D/L:" + score.wld[0]+" "+score.wld[2]+" "+score.wld[1];
+		return output;
 	}
 }

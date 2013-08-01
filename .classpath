@@ -13,5 +13,7 @@
 	<classpathentry kind="lib" path="lib/javax.activation_1.1.0.v201108011116.jar"/>
 	<classpathentry kind="lib" path="lib/javax.mail_1.4.0.v201005080615.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files (x86)/MySQL/Connector J 5.1.25/mysql-connector-java-5.1.25-bin.jar"/>
+	<classpathentry kind="lib" path="lib/colt-1.2.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

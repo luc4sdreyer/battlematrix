@@ -42,6 +42,7 @@ public class GameState {
 	
 	public final static int tankSize = 5;
 	public final static int maxTurns = 200;
+	public final static int maxNumBlocks = 10000;
 	
 	private int[][] map;
 	private ArrayList<Collision> collisions;
@@ -53,7 +54,7 @@ public class GameState {
 	private boolean debugMode;
 	private boolean saveActions;
 	private ArrayList<GameState> actionLog;
-	
+	private long hashCode;
 	
 	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount, int status) {
 		super();
@@ -68,31 +69,29 @@ public class GameState {
 		this.debugMode = false; 
 		this.saveActions = false;
 		this.actionLog = new ArrayList<GameState>();
+		
+		if (this.map.length * this.map[0].length > maxNumBlocks) {
+			System.err.println("FATAL ERROR: Map is too large. Max size: " + GameState.maxNumBlocks);
+		}
+		
+		//
+		// Generate the starting hashCode
+		//
+		this.hashCode = this.generateHash();
+		
 	}
 	public int[][] getMap() {
 		return map;
 	}
-	public void setMap(int[][] map) {
-		this.map = map;
-	}
 	public Bullet[] getBullets() {
 		return bullets;
-	}
-	public void setBullets(Bullet[] bullets) {
-		this.bullets = bullets;
 	}
 	public Tank[] getTanks() {
 		return tanks;
 	}
-	public void setTanks(Tank[] tanks) {
-		this.tanks = tanks;
-	}	
 	public Base[] getBases() {
 		return bases;
 	}
-	public void setBases(Base[] bases) {
-		this.bases = bases;
-	}	
 	public ArrayList<Collision> getCollisions() {
 		return collisions;
 	}
@@ -361,7 +360,7 @@ public class GameState {
 			}
 			if (y == this.map.length - 1) {
 				sb.append(Integer.toString(tickCount));
-			}	
+			}
 			sb.append("\n");
 		}
 		return sb.toString();
@@ -448,8 +447,8 @@ public class GameState {
 //			moves.add(3);
 //		}
 //		return moves;
-//	}	
-//	//private boolean moveTank(Point oldP, Point nextP, GameAction gameAction, int idx) {	
+//	}
+//	//private boolean moveTank(Point oldP, Point nextP, GameAction gameAction, int idx) {
 //	//	return false;
 //	//}
 //	public boolean canTankMove(Point oldP, Point newP) {
@@ -767,6 +766,17 @@ public class GameState {
 		} 
 		
 		this.tickCount++;
+
+		
+		if (this.getTickCount() > GameState.maxTurns) {
+			this.status = GameState.STATUS_DRAW;
+			return;
+		}
+		
+		//
+		// Hash OUT all the units.
+		//
+		this.hashCode = addUnitsToHash(this.hashCode);
 		
 		//
 		// Clear all collisions, they last only one tick
@@ -774,7 +784,7 @@ public class GameState {
 		collisions.clear();
  
 		//
-		// A list of all points (excluding Tanks) that was destoryed by Bullets.
+		// A list of all points (excluding Tanks) that was destroyed by Bullets.
 		//
 		ArrayList<Point> deadListPoint = new ArrayList<Point>();
 		
@@ -984,9 +994,14 @@ public class GameState {
 		}
 		
 		//
-		// Test that Tank area == Tank ID 
+		// Hash IN all the units.
 		//
+		this.hashCode = addUnitsToHash(this.hashCode);
+		
 		if (this.isDebugMode()) {
+			//
+			// Test that Tank area == Tank ID 
+			//
 			for (int i = 0; i < this.tanks.length; i++) {
 				t = this.tanks[i];
 				if (!t.isAlive()) {
@@ -999,8 +1014,13 @@ public class GameState {
 						}
 					}
 				}
+			}			
+
+			long newHash = generateHash();
+			if (hashCode != newHash) {
+				System.err.println("FATAL ERROR: hashCode does not match generateHash()!");
 			}
-		} 
+		}		
 	}
 	private void moveBullets(ArrayList<Point> deadListPoint, ArrayList<Point> bulletCollisionList) {
 		
@@ -1133,6 +1153,12 @@ public class GameState {
 				}
 				Unit obstacle = getUnit(this.map[p.y][p.x]);
 				obstacle.setAlive(false);
+			} else if (this.map[p.y][p.x] == Unit.WALL) {				
+				//
+				// Hash OUT this destroyed Wall
+				//
+				this.hashCode ^= Util.zTable[p.y * this.map[0].length + p.x][Util.Z_WALL];				
+				this.hashCode ^= Util.zTable[p.y * this.map[0].length + p.x][Util.Z_EMPTY];
 			}
 			this.map[p.y][p.x] = 0;
 		}
@@ -1216,4 +1242,74 @@ public class GameState {
 		}
 		return -1;
 	}
+	
+	public static int getTank(Point p, Tank[] tanks) {
+		Point me = null;
+		for (int i = 0; i < 4; i++) {
+			if (!tanks[i].isAlive()) {
+				continue;
+			}
+			me = tanks[i].getPosition();
+			if ((p.x >= me.x && p.x < me.x + GameState.tankSize)
+					&& (p.y >= me.y && p.y < me.y + GameState.tankSize)) {
+				return Unit.TANK1A + i;
+			}
+		}
+		return -1;
+	}
+	
+	public long generateHash() {
+		long newHashCode = 0;
+		for (int y = 0; y < this.map.length; y++) {
+			for (int x = 0; x < this.map[0].length; x++) {
+				if (this.map[y][x] == Unit.WALL) {
+					newHashCode ^= Util.zTable[y * this.map[0].length + x][Util.Z_WALL];
+				} else {
+					newHashCode ^= Util.zTable[y * this.map[0].length + x][Util.Z_EMPTY];
+				}
+			}
+		}
+		
+		newHashCode = addUnitsToHash(newHashCode);
+		
+		return newHashCode;
+	}
+	
+	private long addUnitsToHash(long newHashCode) {
+		Unit me = null;
+		for (int i = 0; i < this.bullets.length; i++) {
+			me = this.bullets[i];
+			if (me.isAlive()) {
+				newHashCode ^= Util.zTable[me.getPosition().y * this.map[0].length + me.getPosition().x][Util.Z_EMPTY];
+				newHashCode ^= Util.zTable[me.getPosition().y * this.map[0].length + me.getPosition().x][Util.Z_BULLET_TANK1A + (i*4) + me.getRotation()];
+			}
+		}
+		
+		for (int i = 0; i < this.tanks.length; i++) {
+			me = this.tanks[i];
+			if (me.isAlive()) {
+				newHashCode ^= Util.zTable[me.getPosition().y * this.map[0].length + me.getPosition().x][Util.Z_EMPTY];
+				newHashCode ^= Util.zTable[me.getPosition().y * this.map[0].length + me.getPosition().x][Util.Z_TANK1A + (i*4) + me.getRotation()];
+			}
+		}
+		
+		for (int i = 0; i < this.bases.length; i++) {
+			me = this.bases[i];
+			if (me.isAlive()) {
+				newHashCode ^= Util.zTable[me.getPosition().y * this.map[0].length + me.getPosition().x][Util.Z_EMPTY];
+				newHashCode ^= Util.zTable[me.getPosition().y * this.map[0].length + me.getPosition().x][Util.Z_BASE1 + i];
+			}
+		}
+		
+		return newHashCode;
+	}
+	@Override
+	public int hashCode() {
+		return (int)this.hashCodeLong();
+	}
+	
+	public long hashCodeLong() {
+		return hashCode;
+	}
+	
 }

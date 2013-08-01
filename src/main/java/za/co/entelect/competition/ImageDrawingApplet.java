@@ -481,11 +481,12 @@ public class ImageDrawingApplet extends JApplet {
 		f.pack();
 		f.setVisible(true);
 		mainGUI.game = new Game(
-							"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Minimax",
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
+							"za.co.entelect.competition.bots.MCTS",
 							"za.co.entelect.competition.bots.MinimaxFixedDepth4",
+							//"za.co.entelect.competition.bots.Random",
 							"map.txt",
 							false);
 //		gameState.getTanks()[1].setAlive(false);

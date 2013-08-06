@@ -12,6 +12,8 @@ public class Game  implements java.io.Serializable {
 
     private za.co.entelect.challenge.Events events;
 
+    private long millisecondsToNextTick;
+
     private java.util.Calendar nextTickTime;
 
     private java.lang.String playerName;
@@ -24,11 +26,13 @@ public class Game  implements java.io.Serializable {
     public Game(
            int currentTick,
            za.co.entelect.challenge.Events events,
+           long millisecondsToNextTick,
            java.util.Calendar nextTickTime,
            java.lang.String playerName,
            za.co.entelect.challenge.Player[] players) {
            this.currentTick = currentTick;
            this.events = events;
+           this.millisecondsToNextTick = millisecondsToNextTick;
            this.nextTickTime = nextTickTime;
            this.playerName = playerName;
            this.players = players;
@@ -72,6 +76,26 @@ public class Game  implements java.io.Serializable {
      */
     public void setEvents(za.co.entelect.challenge.Events events) {
         this.events = events;
+    }
+
+
+    /**
+     * Gets the millisecondsToNextTick value for this Game.
+     * 
+     * @return millisecondsToNextTick
+     */
+    public long getMillisecondsToNextTick() {
+        return millisecondsToNextTick;
+    }
+
+
+    /**
+     * Sets the millisecondsToNextTick value for this Game.
+     * 
+     * @param millisecondsToNextTick
+     */
+    public void setMillisecondsToNextTick(long millisecondsToNextTick) {
+        this.millisecondsToNextTick = millisecondsToNextTick;
     }
 
 
@@ -158,6 +182,7 @@ public class Game  implements java.io.Serializable {
             ((this.events==null && other.getEvents()==null) || 
              (this.events!=null &&
               this.events.equals(other.getEvents()))) &&
+            this.millisecondsToNextTick == other.getMillisecondsToNextTick() &&
             ((this.nextTickTime==null && other.getNextTickTime()==null) || 
              (this.nextTickTime!=null &&
               this.nextTickTime.equals(other.getNextTickTime()))) &&
@@ -182,6 +207,7 @@ public class Game  implements java.io.Serializable {
         if (getEvents() != null) {
             _hashCode += getEvents().hashCode();
         }
+        _hashCode += new Long(getMillisecondsToNextTick()).hashCode();
         if (getNextTickTime() != null) {
             _hashCode += getNextTickTime().hashCode();
         }
@@ -220,6 +246,12 @@ public class Game  implements java.io.Serializable {
         elemField.setXmlName(new javax.xml.namespace.QName("", "events"));
         elemField.setXmlType(new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "events"));
         elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("millisecondsToNextTick");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "millisecondsToNextTick"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "long"));
         elemField.setNillable(false);
         typeDesc.addFieldDesc(elemField);
         elemField = new org.apache.axis.description.ElementDesc();

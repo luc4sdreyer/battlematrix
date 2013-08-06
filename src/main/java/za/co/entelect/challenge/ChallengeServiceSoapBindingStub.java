@@ -16,7 +16,7 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
     static org.apache.axis.description.OperationDesc [] _operations;
 
     static {
-        _operations = new org.apache.axis.description.OperationDesc[3];
+        _operations = new org.apache.axis.description.OperationDesc[4];
         _initOperationDesc1();
     }
 
@@ -39,7 +39,9 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
         param = new org.apache.axis.description.ParameterDesc(new javax.xml.namespace.QName("", "arg1"), org.apache.axis.description.ParameterDesc.IN, new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "action"), za.co.entelect.challenge.Action.class, false, false);
         param.setOmittable(true);
         oper.addParameter(param);
-        oper.setReturnType(org.apache.axis.encoding.XMLType.AXIS_VOID);
+        oper.setReturnType(new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "delta"));
+        oper.setReturnClass(za.co.entelect.challenge.Delta.class);
+        oper.setReturnQName(new javax.xml.namespace.QName("", "return"));
         oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
         oper.setUse(org.apache.axis.constants.Use.LITERAL);
         oper.addFault(new org.apache.axis.description.FaultDesc(
@@ -72,6 +74,27 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
                       true
                      ));
         _operations[2] = oper;
+
+        oper = new org.apache.axis.description.OperationDesc();
+        oper.setName("setActions");
+        param = new org.apache.axis.description.ParameterDesc(new javax.xml.namespace.QName("", "arg0"), org.apache.axis.description.ParameterDesc.IN, new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "action"), za.co.entelect.challenge.Action.class, false, false);
+        param.setOmittable(true);
+        oper.addParameter(param);
+        param = new org.apache.axis.description.ParameterDesc(new javax.xml.namespace.QName("", "arg1"), org.apache.axis.description.ParameterDesc.IN, new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "action"), za.co.entelect.challenge.Action.class, false, false);
+        param.setOmittable(true);
+        oper.addParameter(param);
+        oper.setReturnType(new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "delta"));
+        oper.setReturnClass(za.co.entelect.challenge.Delta.class);
+        oper.setReturnQName(new javax.xml.namespace.QName("", "return"));
+        oper.setStyle(org.apache.axis.constants.Style.WRAPPED);
+        oper.setUse(org.apache.axis.constants.Use.LITERAL);
+        oper.addFault(new org.apache.axis.description.FaultDesc(
+                      new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "EndOfGameException"),
+                      "za.co.entelect.challenge.EndOfGameException",
+                      new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "EndOfGameException"), 
+                      true
+                     ));
+        _operations[3] = oper;
 
     }
 
@@ -137,6 +160,13 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
             qName = new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "bullet");
             cachedSerQNames.add(qName);
             cls = za.co.entelect.challenge.Bullet.class;
+            cachedSerClasses.add(cls);
+            cachedSerFactories.add(beansf);
+            cachedDeserFactories.add(beandf);
+
+            qName = new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "delta");
+            cachedSerQNames.add(qName);
+            cls = za.co.entelect.challenge.Delta.class;
             cachedSerClasses.add(cls);
             cachedSerFactories.add(beansf);
             cachedDeserFactories.add(beandf);
@@ -320,7 +350,7 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
 }
     }
 
-    public void setAction(int arg0, za.co.entelect.challenge.Action arg1) throws java.rmi.RemoteException, za.co.entelect.challenge.EndOfGameException {
+    public za.co.entelect.challenge.Delta setAction(int arg0, za.co.entelect.challenge.Action arg1) throws java.rmi.RemoteException, za.co.entelect.challenge.EndOfGameException {
         if (super.cachedEndpoint == null) {
             throw new org.apache.axis.NoEndPointException();
         }
@@ -341,7 +371,14 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
         if (_resp instanceof java.rmi.RemoteException) {
             throw (java.rmi.RemoteException)_resp;
         }
-        extractAttachments(_call);
+        else {
+            extractAttachments(_call);
+            try {
+                return (za.co.entelect.challenge.Delta) _resp;
+            } catch (java.lang.Exception _exception) {
+                return (za.co.entelect.challenge.Delta) org.apache.axis.utils.JavaUtils.convert(_resp, za.co.entelect.challenge.Delta.class);
+            }
+        }
   } catch (org.apache.axis.AxisFault axisFaultException) {
     if (axisFaultException.detail != null) {
         if (axisFaultException.detail instanceof java.rmi.RemoteException) {
@@ -391,6 +428,48 @@ public class ChallengeServiceSoapBindingStub extends org.apache.axis.client.Stub
          }
         if (axisFaultException.detail instanceof za.co.entelect.challenge.NoBlameException) {
               throw (za.co.entelect.challenge.NoBlameException) axisFaultException.detail;
+         }
+        if (axisFaultException.detail instanceof za.co.entelect.challenge.EndOfGameException) {
+              throw (za.co.entelect.challenge.EndOfGameException) axisFaultException.detail;
+         }
+   }
+  throw axisFaultException;
+}
+    }
+
+    public za.co.entelect.challenge.Delta setActions(za.co.entelect.challenge.Action arg0, za.co.entelect.challenge.Action arg1) throws java.rmi.RemoteException, za.co.entelect.challenge.EndOfGameException {
+        if (super.cachedEndpoint == null) {
+            throw new org.apache.axis.NoEndPointException();
+        }
+        org.apache.axis.client.Call _call = createCall();
+        _call.setOperation(_operations[3]);
+        _call.setUseSOAPAction(true);
+        _call.setSOAPActionURI("");
+        _call.setEncodingStyle(null);
+        _call.setProperty(org.apache.axis.client.Call.SEND_TYPE_ATTR, Boolean.FALSE);
+        _call.setProperty(org.apache.axis.AxisEngine.PROP_DOMULTIREFS, Boolean.FALSE);
+        _call.setSOAPVersion(org.apache.axis.soap.SOAPConstants.SOAP11_CONSTANTS);
+        _call.setOperationName(new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "setActions"));
+
+        setRequestHeaders(_call);
+        setAttachments(_call);
+ try {        java.lang.Object _resp = _call.invoke(new java.lang.Object[] {arg0, arg1});
+
+        if (_resp instanceof java.rmi.RemoteException) {
+            throw (java.rmi.RemoteException)_resp;
+        }
+        else {
+            extractAttachments(_call);
+            try {
+                return (za.co.entelect.challenge.Delta) _resp;
+            } catch (java.lang.Exception _exception) {
+                return (za.co.entelect.challenge.Delta) org.apache.axis.utils.JavaUtils.convert(_resp, za.co.entelect.challenge.Delta.class);
+            }
+        }
+  } catch (org.apache.axis.AxisFault axisFaultException) {
+    if (axisFaultException.detail != null) {
+        if (axisFaultException.detail instanceof java.rmi.RemoteException) {
+              throw (java.rmi.RemoteException) axisFaultException.detail;
          }
         if (axisFaultException.detail instanceof za.co.entelect.challenge.EndOfGameException) {
               throw (za.co.entelect.challenge.EndOfGameException) axisFaultException.detail;

@@ -8,13 +8,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 
 public class Util {
 	public final static SimpleDateFormat milli = new SimpleDateFormat("mm:ss.SSS");
 	public final static SimpleDateFormat date = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss");
-
+	public final static Random javaRandom = new Random();	
 	public final static cern.jet.random.engine.MersenneTwister64 random = 
 			new cern.jet.random.engine.MersenneTwister64(new java.util.Date());
 	
@@ -47,6 +48,35 @@ public class Util {
 			return new Point(p.x-1, p.y);
 		} else {
 			return null;
+		}
+	}	
+	
+	public static int getDirection(Point oldP, Point newP) {
+		if (mDist(oldP, newP) != 1) {
+			System.err.println("FATAL ERROR: mDist(p1, p2) != 1");
+			return -1;
+		} else {
+			return getDirectionUnbounded(oldP, newP);
+		}
+	}
+	
+	public static int getDirectionUnbounded(Point oldP, Point newP) {
+		if (mDist(oldP, newP) < 1) {
+			System.err.println("FATAL ERROR: mDist(p1, p2) < 1");
+			return -1;
+		} 
+		
+		if (oldP.y < newP.y) {
+			return GameAction.NORTH;
+		} else if (oldP.y > newP.y) {
+			return GameAction.SOUTH;
+		} else if (oldP.x < newP.x) {
+			return GameAction.EAST;
+		} else if (oldP.x > newP.x) {
+			return GameAction.WEST;
+		} else {
+			System.err.println("FATAL ERROR: getDirection(Point oldP, Point newP)");
+			return -1;
 		}
 	}
 

@@ -39,6 +39,12 @@ public class Game {
 		this.gameState = newGame(file);
 	}
 	
+	public Game(String player1, String player2, GameState gameState, boolean generateEGame) {
+		super();
+		init(player1, player2, generateEGame);
+		this.gameState = gameState;
+	}
+	
 	private void init(String player1, String player2, boolean generateEGame) {
 		try {
 			Constructor<?> player1Constructor = Class.forName(player1).getConstructor(Integer.TYPE);
@@ -121,10 +127,6 @@ public class Game {
 		
 		this.gameState.nextTick();
 		
-		if (this.gameState.getTickCount() > GameState.maxTurns) {
-			this.gameState.setStatus(GameState.STATUS_DRAW);
-		}
-		
 		if (this.generateEGame) {
 			this.eGame = null;
 			this.eGame = getEGame();
@@ -199,24 +201,28 @@ public class Game {
 				} else if (c == 'A') {
 					if (tanks[0] == null) {
 						tanks[0] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						x++;
 					} else {
 						map[y][x] = 0;
 					}
 				} else if (c == 'B') {
 					if (tanks[1] == null) {
 						tanks[1] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						x++;
 					} else {
 						map[y][x] = 0;
 					}
 				} else if (c == 'X') {
 					if (tanks[2] == null) {
 						tanks[2] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						x++;
 					} else {
 						map[y][x] = 0;
 					}
 				} else if (c == 'Y') {
 					if (tanks[3] == null) {
 						tanks[3] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						x++;
 					} else {
 						map[y][x] = 0;
 					}
@@ -228,7 +234,15 @@ public class Game {
 					map[y][x] = Unit.BASE2;
 				//} else if (c == '*') {
 				//	bullets[i] = new Bullet(new Point(x,y), 2);
-				} else if (c == '_' || c == '0' || c == '1' || c == '2' || c == '3') {
+				} else if (c == '0') {
+					bullets[0] = new Bullet(new Point(x,y), 2);
+				} else if (c == '1') {
+					bullets[1] = new Bullet(new Point(x,y), 2);
+				} else if (c == '2') {
+					bullets[2] = new Bullet(new Point(x,y), 2);
+				} else if (c == '3') {
+					bullets[3] = new Bullet(new Point(x,y), 2);
+				} else if (c == '_') {
 					map[y][x] = 0;
 				} else {
 					System.err.println("UNKNOWN SYMBOL IN MAP.TXT: "+c);
@@ -247,7 +261,7 @@ public class Game {
 				}
 			}
 		}
-		GameState newGame = new GameState(map, bullets, tanks, bases, collisions, 0, GameState.STATUS_ACTIVE);
+		GameState newGame = new GameState(map, bullets, tanks, bases, collisions, 0);
 		//System.out.println("New map:");
 		//System.out.println(newGame.toString());
 		return newGame;

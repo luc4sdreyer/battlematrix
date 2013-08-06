@@ -2,6 +2,8 @@ package za.co.entelect.competition;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Scanner;
 
 import org.datacontract.schemas._2004._07.RoTeD_BattleCity_Library.Actions;
 import org.datacontract.schemas._2004._07.RoTeD_BattleCity_Library.GameInfoTickBoard;
@@ -40,8 +42,17 @@ public class GameState {
 	public static final int STATUS_PLAYER2_WINS = 2;
 	public static final int STATUS_DRAW = 3;
 	
+	public static final int STAGE_EQUAL_T2 = 0;
+	public static final int STAGE_EQUAL_T1 = 1;
+	public static final int STAGE_P1_ADVANTAGE = 2;
+	public static final int STAGE_P2_ADVANTAGE = 3;
+	public static final int STAGE_P1_ENDGAME_T2 = 4;
+	public static final int STAGE_P2_ENDGAME_T2 = 5;
+	public static final int STAGE_P1_ENDGAME_T1 = 6;
+	public static final int STAGE_P2_ENDGAME_T1 = 7;
+	
 	public final static int tankSize = 5;
-	public final static int maxTurns = 200;
+	public final static int maxTurns = 500;
 	public final static int maxNumBlocks = 10000;
 	
 	private int[][] map;
@@ -51,12 +62,13 @@ public class GameState {
 	private Base[] bases;
 	private int tickCount = 0;
 	private int status = 0;
+	private int stage = 0;
 	private boolean debugMode;
 	private boolean saveActions;
 	private ArrayList<GameState> actionLog;
 	private long hashCode;
 	
-	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount, int status) {
+	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount) {
 		super();
 		this.map = map;
 		this.bullets = bullets;
@@ -64,7 +76,7 @@ public class GameState {
 		this.tanks = tanks;
 		this.bases = bases;
 		this.tickCount = tickCount;
-		this.status = status;
+		this.setStatusAndStage();
 		
 		this.debugMode = false; 
 		this.saveActions = false;
@@ -116,8 +128,8 @@ public class GameState {
 			default: return null;
 		}
 	}
-	public void setStatus(int status) {
-		this.status = status;
+	public int getStage() {
+		return stage;
 	}
 	public boolean isActive() {
 		if (this.status == GameState.STATUS_ACTIVE) {
@@ -174,9 +186,10 @@ public class GameState {
 			newBases[i] = bases[i].clone();
 		}
 		
-		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount, this.status);
+		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount);
 	}
-	public static GameState fromEGame(za.co.entelect.challenge.Game eGame, za.co.entelect.challenge.State[][] eStateGrid) {
+	public static GameState fromEGame(za.co.entelect.challenge.Game eGame, za.co.entelect.challenge.State[][] eStateGrid, 
+			HashMap<Integer, Integer> eBullets, String myName, int[] playerIdxHolder, GameState prevXGameState) {
 		if (eGame.getPlayers().length != 2) {
 			System.err.println("eGame.getPlayers().length != 2");
 			return null;
@@ -186,8 +199,14 @@ public class GameState {
 		Base[] newBases = new Base[2];
 		Bullet[] newBullets = new Bullet[4];
 		
+		ArrayList<za.co.entelect.challenge.Bullet> eBulletsTemp = new ArrayList<za.co.entelect.challenge.Bullet>();;
+		
 		for (int i = 0; i < 2; i++) {
 			za.co.entelect.challenge.Player ePlayer = eGame.getPlayers()[i];
+			
+			if (ePlayer.getName().equals(myName)) {
+				playerIdxHolder[0] = i;
+			}
 			
 			za.co.entelect.challenge.Base eBase = ePlayer.getBase();
 			if (eBase == null) {
@@ -201,34 +220,78 @@ public class GameState {
 				if (eUnits.length > 2) {
 					System.err.println("eUnits.length > 2");
 					return null;
-				}
+				}				
 				
 				for (int j = 0; j < eUnits.length; j++) {
-					newTanks[eUnits[j].getId()] = new Tank(new Point(eUnits[j].getX(),eUnits[j].getY()), EDirectionToXRotation(eUnits[j].getDirection()), null, true);
+					System.out.println("Got info for unit with ID=" + eUnits[j].getId());
+					newTanks[i*2 + j] = new Tank(new Point(eUnits[j].getX() - 2,eUnits[j].getY() - 2), EDirectionToXRotation(eUnits[j].getDirection()), null, true);
+					newTanks[i*2 + j].setID(eUnits[j].getId());
 				}
 			}
 
-			za.co.entelect.challenge.Bullet eBullets[] = ePlayer.getBullets();
-			if (eBullets != null) {
-				if (eBullets.length > 2) {
-					System.err.println("eBullets.length > 2");
-					return null;
-				}
-				
-				for (int j = 0; j < eBullets.length; j++) {
-					newBullets[eBullets[j].getId()] = new Bullet(new Point(eBullets[j].getX(),eBullets[j].getY()), EDirectionToXRotation(eBullets[j].getDirection()), true);
+			
+			if (ePlayer.getBullets() != null) {
+//				if (eBullets.length > 2) {
+//					System.err.println("eBullets.length > 2");
+//					return null;
+//				}
+//												
+//				for (int j = 0; j < eBullets.length; j++) {
+//					System.out.println("Bullet[" + eBullets[j].getX() + "][" + eBullets[j].getY() + "] = ID: " + eBullets[j].getId() + " direction: " + eBullets[j].getDirection().getValue());
+//					
+//					newBullets[j] = new Bullet(new Point(eBullets[j].getX(),eBullets[j].getY()), EDirectionToXRotation(eBullets[j].getDirection()), true);
+//					//eBullets[j].getId()
+//				}
+				for (int j = 0; j < ePlayer.getBullets().length; j++) {
+					eBulletsTemp.add(ePlayer.getBullets()[j]);
 				}
 			}
-		}		
+		}
+		
+		for (int i = 0; i < eBulletsTemp.size(); i++) {
+			int key = -1;
+			if (!eBullets.containsKey(eBulletsTemp.get(i).getId())) {
+				//
+				// This is a new bullet. Find out who it belongs to.
+				//
+				if (prevXGameState == null) {
+					//TODO: Return null;
+					System.err.println("FATAL ERROR: Bullets cannot exist on the first round!");
+					return null;
+				} else {
+					Point bulletPosition = new Point(eBulletsTemp.get(i).getX(),eBulletsTemp.get(i).getY());
+					int oppositeOfBulletRotation = (EDirectionToXRotation(eBulletsTemp.get(i).getDirection()) + 2) % 4;
+					bulletPosition = Util.movePoint(bulletPosition, oppositeOfBulletRotation);
+					int unitCode = prevXGameState.getTank(bulletPosition);
+					if (Unit.isTank(unitCode)) {
+						eBullets.put(eBulletsTemp.get(i).getId(), unitCode + 4);
+					} else {
+						System.err.println("FATAL ERROR: Bullet(" + eBulletsTemp.get(i).getX() + ", " + eBulletsTemp.get(i).getY() 
+								+ ", " + EDirectionToXRotation(eBulletsTemp.get(i).getDirection()) + ") was not fired by tank at (" 
+								+ bulletPosition.x + ", " + bulletPosition.y + ")! unitCode: " + unitCode);
+						return null;
+					}
+				}
+			}
+			key = eBulletsTemp.get(i).getId();
+			newBullets[eBullets.get(key) - Unit.BULLET_TANK1A] = new Bullet(new Point(eBulletsTemp.get(i).getX(),eBulletsTemp.get(i).getY()), EDirectionToXRotation(eBulletsTemp.get(i).getDirection()), true);
+		}
+		
 		
 		//int[][] newMap = new int[eBoard.getStates().length][eBoard.getStates()[0].getItem().length];
-		int[][] newMap = new int[eStateGrid.length][eStateGrid[0].length];
+		int[][] newMap = new int[eStateGrid[0].length][eStateGrid.length];
 
 		//TODO: Don't ignore NONE and OUT_OF_BOUNDS states!
 		for (int y = 0; y < newMap.length; y++) {
 			for (int x = 0; x < newMap[0].length; x++) {
-				if (eStateGrid[y][x].getValue().equals(za.co.entelect.challenge.State._FULL)) {
-					newMap[y][x] = 1;
+				if (eStateGrid[x][y].getValue().equals(za.co.entelect.challenge.State._FULL)) {
+					newMap[y][x] = Unit.WALL;
+				} else if (eStateGrid[x][y].getValue().equals(za.co.entelect.challenge.State._EMPTY)) {
+					newMap[y][x] = Unit.EMPTY;
+				} else {
+					System.err.println("eStateGrid[" + x + "][" + y + "] is unknown: " + eStateGrid[x][y].getValue());
+					//TODO: Return NULL here.
+					return null;
 				}
 			}
 		}		
@@ -269,7 +332,7 @@ public class GameState {
 		}
 		
 		ArrayList<Collision> newCollisions = new ArrayList<Collision>();
-		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, eGame.getCurrentTick(), GameState.STATUS_ACTIVE);
+		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, eGame.getCurrentTick());
 	}
 	public static GameState fromRGame(GameInfoTickBoard rGame) {
 //		Tank[] newTanks = new Tank[4];
@@ -286,9 +349,9 @@ public class GameState {
 		switch (xAction.type) {
 			case GameAction.MOVE:
 				switch (xAction.direction) {
-					case GameAction.NORTH:	eAction = Action.UP;	break;
+					case GameAction.NORTH:	eAction = Action.DOWN;	break;
 					case GameAction.EAST:	eAction = Action.RIGHT;	break;
-					case GameAction.SOUTH:	eAction = Action.DOWN;	break;
+					case GameAction.SOUTH:	eAction = Action.UP;	break;
 					case GameAction.WEST:	eAction = Action.LEFT;	break;
 				}
 				break;
@@ -316,9 +379,9 @@ public class GameState {
 	public static int EDirectionToXRotation(za.co.entelect.challenge.Direction eDirection) {
 		int rotation = -1;
 		switch (eDirection.getValue()) {
-			case "UP":		rotation = GameAction.NORTH;	break;
+			case "UP":		rotation = GameAction.SOUTH;	break;
 			case "RIGHT":	rotation = GameAction.EAST;		break;
-			case "DOWN":	rotation = GameAction.SOUTH;	break;
+			case "DOWN":	rotation = GameAction.NORTH;	break;
 			case "LEFT":	rotation = GameAction.WEST;		break;
 		}
 		return rotation;
@@ -381,7 +444,17 @@ public class GameState {
 		
 		return sb.toString();
 	}
-//	public ArrayList<Point> getTankMoves(Point p) {
+	public ArrayList<String> toStringList() {
+		ArrayList<String> list = new ArrayList<String>();
+		String gameString = this.toString();
+		Scanner scanner = new Scanner(gameString);
+		while (scanner.hasNextLine()) {
+			list.add(scanner.nextLine());
+		}
+		scanner.close();
+		return list;
+	}
+//	public ArrayList<Point> getNaiveTankMoves(Point p) {
 //		ArrayList<Point> moves = new ArrayList<Point>();
 //		Point newP;
 //		newP = new Point(p.x, p.y+1);
@@ -423,47 +496,55 @@ public class GameState {
 		}
 	}
 	//TODO add moves that move into an area that currently contains a bullet but will be cleared next round.
-//	public ArrayList<Integer> getTankMovesDirection(Point p) {
-//		ArrayList<Integer> moves = new ArrayList<Integer>();
-//		Point newP;
-//		newP = new Point(p.x, p.y + tankSize + 1);
-//		if (newP.y < this.map.length
-//				&& this.map[newP.y][newP.x] == 0
-//				&& this.map[newP.y][newP.x+1] == 0
-//				&& this.map[newP.y][newP.x+2] == 0
-//				&& this.map[newP.y][newP.x+3] == 0
-//				&& this.map[newP.y][newP.x+4] == 0) {
-//			moves.add(0);
-//		}
-//		newP = new Point(p.x + tankSize + 1, p.y);
-//		if (newP.x < this.map[0].length
-//				&& this.map[newP.y][newP.x] == 0
-//				&& this.map[newP.y+1][newP.x] == 0
-//				&& this.map[newP.y+2][newP.x] == 0
-//				&& this.map[newP.y+3][newP.x] == 0
-//				&& this.map[newP.y+4][newP.x] == 0) {
-//			moves.add(1);
-//		}
-//		newP = new Point(p.x, p.y-1);
-//		if (newP.y >= 0
-//				&& this.map[newP.y][newP.x] == 0
-//				&& this.map[newP.y][newP.x+1] == 0
-//				&& this.map[newP.y][newP.x+2] == 0
-//				&& this.map[newP.y][newP.x+3] == 0
-//				&& this.map[newP.y][newP.x+4] == 0) {
-//			moves.add(2);
-//		}
-//		newP = new Point(p.x-1, p.y);
-//		if (newP.x >= 0
-//				&& this.map[newP.y][newP.x] == 0
-//				&& this.map[newP.y+1][newP.x] == 0
-//				&& this.map[newP.y+2][newP.x] == 0
-//				&& this.map[newP.y+3][newP.x] == 0
-//				&& this.map[newP.y+4][newP.x] == 0) {
-//			moves.add(3);
-//		}
-//		return moves;
-//	}
+	public ArrayList<Integer> getNaiveTankMovesDirection(Point p) {
+		ArrayList<Integer> moves = new ArrayList<Integer>();
+		Point newP;
+		newP = new Point(p.x, p.y + tankSize + 1);
+		if (newP.y < this.map.length
+				&& this.map[newP.y][newP.x] == 0
+				&& this.map[newP.y][newP.x+1] == 0
+				&& this.map[newP.y][newP.x+2] == 0
+				&& this.map[newP.y][newP.x+3] == 0
+				&& this.map[newP.y][newP.x+4] == 0) {
+			moves.add(0);
+		}
+		newP = new Point(p.x, p.y-1);
+		if (newP.y >= 0
+				&& this.map[newP.y][newP.x] == 0
+				&& this.map[newP.y][newP.x+1] == 0
+				&& this.map[newP.y][newP.x+2] == 0
+				&& this.map[newP.y][newP.x+3] == 0
+				&& this.map[newP.y][newP.x+4] == 0) {
+			moves.add(2);
+		}
+		newP = new Point(p.x + tankSize + 1, p.y);
+		if (newP.x < this.map[0].length
+				&& this.map[newP.y][newP.x] == 0
+				&& this.map[newP.y+1][newP.x] == 0
+				&& this.map[newP.y+2][newP.x] == 0
+				&& this.map[newP.y+3][newP.x] == 0
+				&& this.map[newP.y+4][newP.x] == 0) {
+			moves.add(1);
+		}
+		newP = new Point(p.x-1, p.y);
+		if (newP.x >= 0
+				&& this.map[newP.y][newP.x] == 0
+				&& this.map[newP.y+1][newP.x] == 0
+				&& this.map[newP.y+2][newP.x] == 0
+				&& this.map[newP.y+3][newP.x] == 0
+				&& this.map[newP.y+4][newP.x] == 0) {
+			moves.add(3);
+		}
+		return moves;
+	}
+	public ArrayList<Point> getNaiveTankMovesPoint(Point p) {
+		ArrayList<Integer> directions = this.getNaiveTankMovesDirection(p);
+		ArrayList<Point> points = new ArrayList<Point>(4);
+		for (int i = 0; i < directions.size(); i++) {
+			points.add(Util.movePoint(p, directions.get(i)));
+		}
+		return points;
+	}
 //	//private boolean moveTank(Point oldP, Point nextP, GameAction gameAction, int idx) {
 //	//	return false;
 //	//}
@@ -995,19 +1076,26 @@ public class GameState {
 
 		//	
 		// End-game conditions
-		//		
-		if (!bases[0].isAlive() 
-				|| !bases[1].isAlive()
-				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
-			if ((!bases[0].isAlive() && !bases[1].isAlive())
-				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
-				this.status = STATUS_DRAW;
-			} else if (!bases[0].isAlive()) {
-				this.status = STATUS_PLAYER2_WINS;
-			} else {
-				this.status = STATUS_PLAYER1_WINS;
-			}
-		}
+		//	
+		this.setStatusAndStage();
+		
+		
+//		int oldStatus = 0;
+//		if (!bases[0].isAlive() 
+//				|| !bases[1].isAlive()
+//				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
+//			if ((!bases[0].isAlive() && !bases[1].isAlive())
+//				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
+//				oldStatus = STATUS_DRAW;
+//			} else if (!bases[0].isAlive()) {
+//				oldStatus = STATUS_PLAYER2_WINS;
+//			} else {
+//				oldStatus = STATUS_PLAYER1_WINS;
+//			}
+//		}
+//		if (this.status != oldStatus) {
+//			System.err.println("FATAL ERROR: this.status != oldStatus");
+//		}
 		
 		//
 		// Hash IN all the units.
@@ -1036,6 +1124,76 @@ public class GameState {
 			if (hashCode != newHash) {
 				System.err.println("FATAL ERROR: hashCode does not match generateHash()!");
 			}
+		}		
+	}
+	private void setStatusAndStage() {
+		//
+		// Count number of units
+		//	
+		int numBase1 = 0;
+		int numBase2 = 0;
+		int numTank1 = 0;
+		int numTank2 = 0;
+		
+		if (this.bases[0].isAlive()) {
+			numBase1++;
+		}
+		if (this.bases[1].isAlive()) {
+			numBase2++;
+		}			
+		if (this.tanks[0].isAlive()) {
+			numTank1++;
+		}
+		if (this.tanks[1].isAlive()) {
+			numTank1++;
+		}
+		if (this.tanks[2].isAlive()) {
+			numTank2++;
+		}
+		if (this.tanks[3].isAlive()) {
+			numTank2++;
+		}
+		
+		if (numBase1 != numBase2) {
+			if (numBase1 > numBase2) {
+				this.status = STATUS_PLAYER1_WINS;
+			} else {
+				this.status = STATUS_PLAYER2_WINS;
+			}
+		} else if (numBase1 == 0 && numBase2 == 0) {
+			this.status = STATUS_DRAW;
+		} else if (numTank1 == 0 && numTank2 == 0) {
+			this.status = STATUS_DRAW;
+		} else {
+			//
+			// Game is still active, split it into stages.
+			//
+
+			if (numTank1 == 2 && numTank2 == 2) {
+				this.stage = STAGE_EQUAL_T2;
+				
+			} else if (numTank1 == 1 && numTank2 == 1) {
+				this.stage = STAGE_EQUAL_T1;
+				
+			} else if (numTank1 == 2 && numTank2 == 1) {
+				this.stage = STAGE_P1_ADVANTAGE;
+				
+			} else if (numTank1 == 1 && numTank2 == 2) {
+				this.stage = STAGE_P2_ADVANTAGE;
+				
+			} else if (numTank1 == 2 && numTank2 == 0) {
+				this.stage = STAGE_P1_ENDGAME_T2;
+				
+			} else if (numTank1 == 1 && numTank2 == 0) {
+				this.stage = STAGE_P1_ENDGAME_T1;
+				
+			} else if (numTank1 == 0 && numTank2 == 2) {
+				this.stage = STAGE_P2_ENDGAME_T2;
+				
+			} else if (numTank1 == 0 && numTank2 == 1) {
+				this.stage = STAGE_P2_ENDGAME_T1;
+				
+			}		
 		}		
 	}
 	private void moveBullets(ArrayList<Point> deadListPoint, ArrayList<Point> bulletCollisionList) {

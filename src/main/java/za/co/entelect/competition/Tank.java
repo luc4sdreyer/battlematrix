@@ -6,6 +6,7 @@ import java.awt.Point;
 public class Tank extends Unit{
 	private GameAction nextAction;
 	private Point prevPosition;
+	private int ID;
 	public Tank(Point position, int rotation, GameAction nextAction) {
 		super(position, rotation);
 		this.nextAction = nextAction;
@@ -37,6 +38,12 @@ public class Tank extends Unit{
 	}
 	public void setNextAction(GameAction nextAction) {
 		this.nextAction = nextAction;
+	}
+	public int getID() {
+		return ID;
+	}
+	public void setID(int iD) {
+		ID = iD;
 	}
 	public void clearNextAction() {
 		this.nextAction = null;

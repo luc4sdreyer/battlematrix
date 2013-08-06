@@ -59,9 +59,10 @@ public class Simulator implements Runnable {
 
 
 	public static void main(String[] args) {		
-		int a = Util.zTable.length;
+		@SuppressWarnings("unused")
+		int zTableInitializer = Util.zTable.length;
 
-		int numSims = 1;
+		int numSims;
 		if (dbMode) {
 			numSims = Integer.MAX_VALUE;
 
@@ -86,6 +87,8 @@ public class Simulator implements Runnable {
 			if (connection == null) {
 				System.out.println("Failed to make connection!");
 			}
+		} else {
+			numSims = 100;
 		}
 
 
@@ -94,7 +97,7 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 30000;
+				numTests = 10;
 			}
 			long time = System.nanoTime();
 			ExecutorService executor = Executors.newFixedThreadPool(numThreads);
@@ -109,12 +112,14 @@ public class Simulator implements Runnable {
 					mapString += str + "\n";
 				}
 			} else {
-				gameFile = Game.readGameFromFile("map.txt");
+				//gameFile = Game.readGameFromFile("map.txt");
+				
+				gameFile = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0).toStringList();
 			}
 			ArrayList<GameAction>[] moveList = null; //ImageDrawingApplet.loadMoveList();
 
 			String bot1 =
-					"za.co.entelect.competition.bots.Random"
+					"za.co.entelect.competition.bots.Endgame"
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
@@ -132,11 +137,11 @@ public class Simulator implements Runnable {
 				Result nextResult = new Result();
 				results.add(nextResult);
 				Simulator sim = null;
-				if (i < numTests/2) {
-					sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2);
-				} else {
-					sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1);
-				}
+				//if (i < numTests/2) {
+				sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2);
+				//} else {
+				//	sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1);
+				//}
 				executor.execute(sim);
 			}
 			executor.shutdown();

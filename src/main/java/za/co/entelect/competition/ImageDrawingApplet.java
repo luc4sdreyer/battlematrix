@@ -44,31 +44,6 @@ class UserInput {
 	
 }
 
-class Bullet extends Unit {
-	public Bullet(Point position, int rotation) {
-		super(position, rotation);
-	}
-	public Bullet(Point position, int rotation, boolean alive) {
-		super(position, rotation, alive);
-	}
-	public Bullet clone() {
-		return new Bullet(this.position, this.rotation, this.alive);
-	}
-}
-
-
-class Base extends Unit {
-	public Base(Point position, int rotation) {
-		super(position, rotation);
-	}
-	public Base(Point position, int rotation, boolean alive) {
-		super(position, rotation, alive);
-	}
-	public Base clone() {
-		return new Base(this.position, this.rotation, this.alive);
-	}
-}
-
 class Collision extends Unit {
 	public Collision(Point position, int rotation) {
 		super(position, rotation);
@@ -107,6 +82,8 @@ class ImageDrawingComponent extends Component implements ActionListener {
     private Timer timer;
     private final int DELAY;
     private Object syncObject;
+    
+    public Point preferredSize;
 
 	public ImageDrawingComponent(int delay, Object syncObject) {
 		tank1A = initImage(".\\assets\\Tank1A.png");
@@ -220,7 +197,11 @@ class ImageDrawingComponent extends Component implements ActionListener {
 	}
 
 	public Dimension getPreferredSize() {
-		return new Dimension((int)this.drawScale*this.blockSize*13*5, (int)this.drawScale*this.blockSize*12*5);
+		if (preferredSize != null) {
+			return new Dimension((int)this.drawScale*this.blockSize*(preferredSize.x+1), (int)this.drawScale*this.blockSize*(preferredSize.y+1));
+		} else {
+			return new Dimension((int)this.drawScale*this.blockSize*13*5, (int)this.drawScale*this.blockSize*12*5);
+		}
 	}
 	
 	private void drawTank(Graphics g, BufferedImage[] img, int idx, GameState prevGS,	GameState currGS, 
@@ -439,7 +420,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 public class ImageDrawingApplet extends JApplet {
 	
 	//TODO: Just a marker!
-	public final static int DELAY = 500;
+	public final static int DELAY = 100;
 	public final static boolean absoluteTiming = false;
 	
 	public static final long serialVersionUID = 5023415827458014290L;
@@ -478,20 +459,29 @@ public class ImageDrawingApplet extends JApplet {
 		
 		mainGUI.init();
 		f.add("Center", mainGUI);
-		f.pack();
-		f.setVisible(true);
+		
+		//GameState gameState = MapGenerator.generateRandom(80, 100, 60, 80, 5, 0.10, true, true, 1, 0, 92555845741342L); //50851925610806L);
+		ArrayList<String> gameList = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0, 92555845741342L).toStringList();
+		
 		mainGUI.game = new Game(
 							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Minimax",
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
-							"za.co.entelect.competition.bots.MCTS",
+							//"za.co.entelect.competition.bots.MCTS",
 							"za.co.entelect.competition.bots.MinimaxFixedDepth4",
-							//"za.co.entelect.competition.bots.Random",
+							//"za.co.entelect.competition.bots.Endgame",
+							"za.co.entelect.competition.bots.Random",
 							"map.txt",
+							//gameState,
+							//gameList,
 							false);
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
 //		gameState.getTanks()[3].setAlive(false);
+
+		mainGUI.id.preferredSize = new Point(mainGUI.game.getGameState().getMap()[0].length, mainGUI.game.getGameState().getMap().length);
+		f.pack();
+		f.setVisible(true);
 		
 		mainGUI.moveList = loadMoveList();
 		
@@ -689,11 +679,7 @@ public class ImageDrawingApplet extends JApplet {
 			String line = in.nextLine();
 			file.add(line);
 		}
-		in.close();
-		
-		if (file.get(0).charAt(0) == 'X') {
-			return null;
-		}
+		in.close();		
 		
 		@SuppressWarnings("unchecked")
 		ArrayList<GameAction>[] moves = new ArrayList[4]; 
@@ -701,6 +687,9 @@ public class ImageDrawingApplet extends JApplet {
 			moves[i] = new ArrayList<GameAction>();
 		}
 		for (int row = 0; row < file.size(); row++) {
+			if (file.get(row).charAt(0) == 'X') {
+				continue;
+			}
 			StringTokenizer st = new StringTokenizer(file.get(row), ",");
 			while(st.hasMoreTokens()) {
 				String token = st.nextToken();

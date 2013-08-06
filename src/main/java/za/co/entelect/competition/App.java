@@ -1,5 +1,6 @@
 package za.co.entelect.competition;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -7,6 +8,8 @@ import java.net.MalformedURLException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Properties;
 
 import org.apache.axis.AxisFault;
 
@@ -21,15 +24,38 @@ public class App
 {
 	public static void main( String[] args )
 	{
-		String myName = "Client1";
-		if (args.length == 1) {
-			myName = args[0];
-		}
+		Properties prop = new Properties();		
+		String propertiesFile = "config.properties";
 		
+		String playStyle = new String();
+		String myName = new String();
+		
+		try {
+			//load a properties file
+			prop.load(new FileInputStream(propertiesFile));
+
+			//get the property value and print it out
+			playStyle = prop.getProperty("playStyle");
+			
+			System.out.println("playStyle=" + playStyle);
+		} catch (IOException ex) {
+			System.err.println("Could not read " + propertiesFile);
+		}
+
+		String endPoint = new String();
+		if (args.length == 1) {
+			endPoint = args[0];
+		} else if (args.length == 2) {
+			endPoint = args[0];
+			myName = args[1];
+		}
+		System.out.println("Connecting to: " + endPoint);
+		System.out.println("myName: " + myName);
+
 		Bot stupidBot = null;
-		if (myName.equals("Client1")) {
+		if (playStyle.equals("Client1")) {
 			try {
-				Constructor<?> player1Constructor = Class.forName("za.co.entelect.competition.bots.MinimaxFixedDepth").getConstructor(Integer.TYPE);
+				Constructor<?> player1Constructor = Class.forName("za.co.entelect.competition.bots.MinimaxFixedDepth2").getConstructor(Integer.TYPE);
 				stupidBot = (Bot) player1Constructor.newInstance(0);
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
@@ -47,13 +73,11 @@ public class App
 				e.printStackTrace();
 			}
 		}
-		
+
 		ChallengeServiceSoapBindingStub service = null;
 		try {
-			//java.net.URL url = new java.net.URL("http://localhost:9090/ChallengePort");
-			//java.net.URL url = new java.net.URL("http://localhost:8080/Axis2WSTest/services/ChallengeService");
-			java.net.URL url = new java.net.URL("http://ec2-176-34-161-166.eu-west-1.compute.amazonaws.com/BattleCity/WebService/BasicGameHost.svc");
-			
+			java.net.URL url = new java.net.URL(endPoint);
+
 			service = new ChallengeServiceSoapBindingStub(url, null);
 			service.setMaintainSession(true);
 		} catch (AxisFault e) {
@@ -63,8 +87,12 @@ public class App
 		}
 
 		State[][] eStateGrid = null;
+		HashMap<Integer, Integer> eBullets = new HashMap<Integer, Integer>();
+		GameState xGameState = null;
+		GameState prevXGameState = null;
+		
 		try {
-			eStateGrid = service.login(myName);
+			eStateGrid = service.login();
 		} catch (NoBlameException e) {
 			e.printStackTrace();
 		} catch (EndOfGameException e) {
@@ -72,11 +100,10 @@ public class App
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
-//		catch (java.net.ConnectException e) {
-//			System.out.println("Could not connect");
-//		}
-		System.out.println("eStateGrid[0][0]: "+eStateGrid[0][0]);
-		
+		//		catch (java.net.ConnectException e) {
+		//			System.out.println("Could not connect");
+		//		}
+
 		int prevTick = -1;
 
 		while (true) {            
@@ -84,11 +111,11 @@ public class App
 			try {
 				eGame = service.getStatus();
 			} catch (RemoteException e) {
-				e.printStackTrace();
+				e.printStackTrace();				
 			}
 			//System.out.println("Got status. Game: "+game);
 			//System.out.println("game.getCurrentTick(): "+game.getCurrentTick());
-			
+
 			if (eGame.getCurrentTick() == prevTick) {
 				try {
 					Thread.sleep(10);
@@ -98,31 +125,43 @@ public class App
 				}
 				continue;
 			}
-			
+
 			System.out.println("===============================================================================");
 			prevTick = eGame.getCurrentTick();
 
 			System.out.println("getCurrentTick(): "+eGame.getCurrentTick());
 			//System.out.println("getPlayerName(): "+game.getPlayerName());
+
+			if (eGame.getEvents() != null) {
+				if (eGame.getEvents().getBlockEvents() != null) {
+					for (BlockEvent blockEvent : eGame.getEvents().getBlockEvents()) {
+						eStateGrid[blockEvent.getPoint().getX()][blockEvent.getPoint().getY()] = blockEvent.getNewState();
+						System.out.println("eStateGrid[" + blockEvent.getPoint().getX() + "][" + blockEvent.getPoint().getY() +
+								"] is set to: " + blockEvent.getNewState());
+					}
+				}
+				if (eGame.getEvents().getUnitEvents() != null) {
+					for (UnitEvent unitEvent : eGame.getEvents().getUnitEvents()) {
+						System.out.println("unitEvent: "+unitEvent.toString());
+					}
+				}
+			}
+
 			
-//			for (BlockEvent blockEvent : game.getEvents().getBlockEvents()) {
-//				System.out.println("blockEvent: "+blockEvent.toString());
-//			}
-//			for (UnitEvent unitEvent : game.getEvents().getUnitEvents()) {
-//				System.out.println("unitEvent: "+unitEvent.toString());
-//			}
-//			for (Player player : game.getPlayers()) {
-//				System.out.println("player: "+player.toString());
-//			}
 			
+			int[] playerIdxHolder = new int[1];
+			playerIdxHolder[0] = -1;
+			prevXGameState = xGameState;
+			xGameState = GameState.fromEGame(eGame, eStateGrid, eBullets, myName, playerIdxHolder, prevXGameState);
+			int playerIdx = playerIdxHolder[0];
+			System.out.println("PlayerIdx: " + playerIdx);
 			
-			GameState xGameState = GameState.fromEGame(eGame, eStateGrid);
 			System.out.println("Game state:");
 			System.out.println(xGameState.toString());
-			
+
 			ArrayList<za.co.entelect.challenge.Action> actions = new ArrayList<za.co.entelect.challenge.Action>();			
-			
-			if (myName.equals("Client1")) {
+
+			if (playStyle.equals("Client1")) {
 				GameAction[] gameActions = stupidBot.getActions(xGameState, 3000);
 				for (int i = 0; i < 2; i++) {
 					Tank tank = xGameState.getTanks()[i];
@@ -132,37 +171,43 @@ public class App
 					za.co.entelect.challenge.Action action = GameState.XActionToEAction(gameActions[i]);
 					actions.add(action);
 				}
-			} else {
-				for (int i = 0; i < 2; i++) {
+			} else if (playStyle.equals("Fire")) {
+				actions.add(GameState.XActionToEAction(new GameAction(GameAction.FIRE, GameAction.NONE)));
+				actions.add(GameState.XActionToEAction(new GameAction(GameAction.FIRE, GameAction.NONE)));
+			} else if (playStyle.equals("North")) {
+				actions.add(GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.NORTH)));
+				actions.add(GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.NORTH)));
+			} else if (playStyle.equals("FireMove")) {
+				for (int i = 2*playerIdx; i < 2*playerIdx + 2; i++) {
 					Tank tank = xGameState.getTanks()[i];
 					if (!tank.isAlive()) {
 						continue;
 					}
 					za.co.entelect.challenge.Action action = null;
-					
-					if (prevTick == 0) {
-						if (tank.getPosition().x < xGameState.getMap()[0].length/2) {
-							action = za.co.entelect.challenge.Action.RIGHT;
+
+					if (xGameState.getBullets()[i].isAlive()) {
+						if (tank.getPosition().y < xGameState.getMap().length/2) {
+							action = GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.NORTH));
 						} else {
-							action = za.co.entelect.challenge.Action.LEFT;
+							action = GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.SOUTH));
 						}
 					} else {
 						action = za.co.entelect.challenge.Action.FIRE;
 					}
-					
-	//				int rand = (int)(Math.random()*5);
-	//				switch(rand) {
-	//					case 0: 	a1 = za.co.entelect.challenge.Action.UP; 	break;
-	//					case 1: 	a1 = za.co.entelect.challenge.Action.RIGHT; break;
-	//					case 2: 	a1 = za.co.entelect.challenge.Action.DOWN;	break;
-	//					case 3: 	a1 = za.co.entelect.challenge.Action.RIGHT; break;
-	//					case 4: 	a1 = za.co.entelect.challenge.Action.FIRE; 	break;
-	//				}
-					
+
+					//				int rand = (int)(Math.random()*5);
+					//				switch(rand) {
+					//					case 0: 	a1 = za.co.entelect.challenge.Action.UP; 	break;
+					//					case 1: 	a1 = za.co.entelect.challenge.Action.RIGHT; break;
+					//					case 2: 	a1 = za.co.entelect.challenge.Action.DOWN;	break;
+					//					case 3: 	a1 = za.co.entelect.challenge.Action.RIGHT; break;
+					//					case 4: 	a1 = za.co.entelect.challenge.Action.FIRE; 	break;
+					//				}
+
 					actions.add(action);
 				}
 			}
-			
+
 			int numAliveTanks = 0;
 			for (int i = 0; i < 2; i++) {
 				if (xGameState.getTanks()[i].isAlive()) {
@@ -171,10 +216,20 @@ public class App
 			}
 			System.out.println("numAliveTanks : "+numAliveTanks);
 			try {
-				for (int i = 0; i < actions.size(); i++) {
-					za.co.entelect.challenge.Action action = actions.get(i);
-					service.setAction(i, action);
-					System.out.println("T"+(i+1)+" doing: "+action);
+//				for (int i = 0; i < actions.size(); i++) {
+//					za.co.entelect.challenge.Action action = actions.get(i);
+//					service.setActions(i, action);
+//					System.out.println("T"+(i+1)+" doing: "+action);
+//				}
+				if (xGameState.getTanks()[playerIdx*2 + 0].isAlive()) {
+					System.out.println("T0 is doing: "+actions.get(0));
+					@SuppressWarnings("unused")
+					Delta d1 = service.setAction(xGameState.getTanks()[playerIdx*2 + 0].getID(), actions.get(0));
+				}
+				if (xGameState.getTanks()[playerIdx*2 + 1].isAlive()) {
+					System.out.println("T1 is doing: "+actions.get(1));
+					@SuppressWarnings("unused")
+					Delta d2 = service.setAction(xGameState.getTanks()[playerIdx*2 + 1].getID(), actions.get(1));
 				}
 			} catch (EndOfGameException e) {
 				System.out.println("Game Over!");
@@ -187,7 +242,7 @@ public class App
 				e.printStackTrace();
 				break;
 			}
-			
+
 			long timeLeft = 0;
 			if (eGame.getNextTickTime() == null) {
 				System.err.println("CRITICAL SERVER ERROR: eGame.getNextTickTime() == null");
@@ -195,7 +250,7 @@ public class App
 			} else {
 				timeLeft = eGame.getNextTickTime().getTimeInMillis() - Calendar.getInstance().getTimeInMillis();
 			}
-			
+
 			if (timeLeft > 0) {
 				try {
 					Thread.sleep((long) (timeLeft*0.9));

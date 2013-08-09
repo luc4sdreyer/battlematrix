@@ -30,9 +30,9 @@ public class Endgame extends Bot {
 		if (!gameState.isActive() || !active) {
 			gameActions = Random.getActionsStatic();
 			System.out.println("\tEndgame using RANDOM move instead.");
-		} else if (gameState.getStage() < GameState.STAGE_P1_ENDGAME_T2) {
-			System.err.println("FATAL ERROR: Endgame Bot can only plan endgames!");			
-			gameActions = Random.getActionsStatic();
+//		} else if (gameState.getStage() < GameState.STAGE_P1_ENDGAME_T2) {
+//			System.err.println("FATAL ERROR: Endgame Bot can only plan endgames!");			
+//			gameActions = Random.getActionsStatic();
 		} else {
 			Point target = gameState.getBases()[(getPlayerIndex() + 1) % 2].getPosition();
 			if (path == null) {
@@ -202,7 +202,63 @@ public class Endgame extends Bot {
 		} else if ((target.y == 0 || target.y == map.length - 1) && (target.x == 0 || target.x == map[0].length - 1)) {
 			System.err.println("FATAL ERROR: Base may not be in the absolute corner!");
 		} else {
-			System.err.println("FATAL ERROR: Base must be on the edge of the map!");
+			int x = target.x;
+			
+			numWalls = 0;
+			for (int y = target.y + 3; y < map.length; y++) {
+				if (map[y][x] == Unit.WALL) {
+					numWalls++;
+					if (numWalls > numWallsAllowed) {
+						break;
+					}
+				} else if (Unit.isBase(map[y][x])) {
+					break;
+				}
+				goalArea.add(new Point(x,y));
+			}
+			
+			numWalls = 0;
+			for (int y = target.y - 3; y >=0; y--) {
+				if (map[y][x] == Unit.WALL) {
+					numWalls++;
+					if (numWalls > numWallsAllowed) {
+						break;
+					}
+					continue;
+				} else if (Unit.isBase(map[y][x])) {
+					break;
+				}
+				goalArea.add(new Point(x,y));
+			}
+			
+			int y = target.y;
+			
+			numWalls = 0;
+			for (x = target.x + 3; x < map[0].length; x++) {
+				if (map[y][x] == Unit.WALL) {
+					numWalls++;
+					if (numWalls > numWallsAllowed) {
+						break;
+					}
+				} else if (Unit.isBase(map[y][x])) {
+					break;
+				}
+				goalArea.add(new Point(x,y));
+			}
+			
+			numWalls = 0;
+			for (x = target.x - 3; x >=0; x--) {
+				if (map[y][x] == Unit.WALL) {
+					numWalls++;
+					if (numWalls > numWallsAllowed) {
+						break;
+					}
+					continue;
+				} else if (Unit.isBase(map[y][x])) {
+					break;
+				}
+				goalArea.add(new Point(x,y));
+			}
 		}
 		
 		return goalArea;

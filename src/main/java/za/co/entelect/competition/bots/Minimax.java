@@ -6,6 +6,7 @@ import za.co.entelect.competition.GameAction;
 import za.co.entelect.competition.Unit;
 import za.co.entelect.competition.GameState;
 import za.co.entelect.competition.OutOfTimeException;
+import za.co.entelect.competition.Util;
 
 public class Minimax extends Bot {
 	private long timer;
@@ -23,7 +24,8 @@ public class Minimax extends Bot {
 
 	@Override
 	public GameAction[] getActions(GameState gameState, int timeLimitMS) {
-		ArrayList<GameAction[]> actions = minimaxID(gameState, false, timeLimitMS);
+		boolean doAlphaBetaPruning = true;
+		ArrayList<GameAction[]> actions = minimaxID(gameState, doAlphaBetaPruning, timeLimitMS);
 		if (actions.isEmpty()) {
 			actions.add(Random.getActionsStatic());
 			actions.add(Random.getActionsStatic());
@@ -60,7 +62,7 @@ public class Minimax extends Bot {
 		//int negInf = -1000000000;
 		//int posInf = 1000000000;
 
-		int alpha = Integer.MIN_VALUE;
+		int alpha = GameState.NEG_INF;
 		int deepestPly = 0;
 		for (int depthLimit = 2; depthLimit <= maxDepthLimit; depthLimit += 2) {
 			GameState newState = gameState.clone();     
@@ -76,16 +78,22 @@ public class Minimax extends Bot {
 //			} else {
 //			}
 			try {
-				tempAlpha = this.MinimaxWithoutAB(tempBestPath, timeLimit, depthLimit, 0, newState, null);
-
+		        if (doAlphaBetaPruning == true) {                
+		            alpha = GameState.NEG_INF;
+		            int beta = GameState.POS_INF;
+		            tempAlpha = this.MinimaxWithAB(tempBestPath, timeLimit, depthLimit, 0, newState, null, alpha, beta);
+		        } else {
+		            tempAlpha = this.MinimaxWithoutAB(tempBestPath, timeLimit, depthLimit, 0, newState, null);
+		        }
 				//
 				// There is a bug where Action that start with NONE are suggested, leading to the tank standing still 
 				// for no reason. This might help, or a heuristic that encourages moving.
 				//				
 //				if (tempAlpha > alpha) {
-					bestPath = tempBestPath;
+				bestPath = tempBestPath;
 //				}
-				alpha = Math.max(alpha, tempAlpha);
+				//alpha = Math.max(alpha, tempAlpha);
+				alpha = tempAlpha;
 				deepestPly = depthLimit;
 				
 				//
@@ -164,16 +172,6 @@ public class Minimax extends Bot {
 					newState.getTanks()[3].setNextAction(thisMove[1]);					
 					newState.nextTick();	
 				}
-	//			if ((currentState.equals(newState)) != true) {
-	//				console.log("currentState !== equals(newState)");
-	//			}
-				
-	//			var moveSuccess = newState.move(moves[i]);
-	//			if (moveSuccess !== true) {
-	//				console.log("moveSuccess !== true");
-	//				console.log("moves[i]: "+moves[i]);
-	//				console.log("moves: "+moves);
-	//			}
 				ArrayList<GameAction[]> newPath = new ArrayList<GameAction[]>();
 	
 				int result = this.MinimaxWithoutAB(newPath, timeLimit, depthLimit, currentDepth+1, newState, thisMove);
@@ -211,10 +209,121 @@ public class Minimax extends Bot {
 		for (GameAction[] gameAction : bestNewPath) {
 			bestPath.add(gameAction);
 		}
-		//var bestMoveArray = [bestMove];
-		//bestMoveArray = bestMoveArray.concat(bestNewPath);
-		//bestPath.push.apply(bestPath, bestMoveArray);       //The only one-liner way to concat arrays without creating a new one!
 		return alpha;
 	};
+	
+	public int MinimaxWithAB(ArrayList<GameAction[]> bestPath, long timeLimit,
+			int depthLimit, int currentDepth, GameState currentState, GameAction[] parentMove,
+			int alpha, int beta) throws OutOfTimeException {
+		long diff = System.nanoTime() - this.timer;
+		if (diff > timeLimit) {
+			throw new OutOfTimeException();
+		}
+		
+		if (depthLimit % 2 != 0) {
+			System.err.println("depthLimit must be a multiple of two!");
+		}
 
+		if (!currentState.isActive() ||	currentDepth >= depthLimit) {
+			return currentState.getHeuristicValue(GameState.H_MINIMAX);
+		}
+
+		boolean maximizing = true;
+		if (currentDepth % 2 == 1) {
+			maximizing = false;
+		}
+
+		int bestAlpha = GameState.NEG_INF;
+		int bestBeta  = GameState.POS_INF;
+
+		ArrayList<GameAction> movesTA = null;
+		ArrayList<GameAction> movesTB = null;	
+		if (maximizing) {
+			movesTA = currentState.getTankActions(Unit.TANK1A);
+			movesTB = currentState.getTankActions(Unit.TANK1B);
+		} else {
+			movesTA = currentState.getTankActions(Unit.TANK2A);
+			movesTB = currentState.getTankActions(Unit.TANK2B);
+		}
+		
+		GameAction[] bestMove = null;
+		ArrayList<GameAction[]> bestNewPath = null; 
+		for (int tA = 0; tA < movesTA.size(); tA++) {
+			for (int tB = 0; tB < movesTB.size(); tB++) {
+				GameState newState = null;
+
+				GameAction[] thisMove = new GameAction[2];
+				thisMove[0] = movesTA.get(tA);
+				thisMove[1] = movesTB.get(tB);
+				thisMove[0].level = currentDepth;
+				thisMove[1].level = currentDepth;
+				
+				if (maximizing) {
+					newState = currentState;
+				} else {
+					newState = currentState.clone();
+					newState.getTanks()[0].setNextAction(parentMove[0]);
+					newState.getTanks()[1].setNextAction(parentMove[1]);
+					newState.getTanks()[2].setNextAction(thisMove[0]);
+					newState.getTanks()[3].setNextAction(thisMove[1]);					
+					newState.nextTick();	
+				}
+				ArrayList<GameAction[]> newPath = new ArrayList<GameAction[]>();
+	
+				int result = this.MinimaxWithAB(newPath, timeLimit, depthLimit, currentDepth+1, newState, thisMove, alpha, beta);
+				
+				if (thisMove[0].type == GameAction.FIRE && result == -1000000) {
+					//System.out.println();
+				}
+				
+				if (bestMove == null)  {
+					bestMove = thisMove;
+					bestNewPath = newPath;
+				}
+				
+				if (maximizing == true) {
+					if (result > bestAlpha) {
+						bestAlpha = result;
+						//System.out.println("Max: New best:"+result);
+						bestMove = thisMove;
+						bestNewPath = newPath;
+					}
+		            // Cutoff
+		            if (bestAlpha >= beta) {
+		                // No need to update bestMove or bestNewPath because it this part of the tree will be pruned
+		                //console.log("Beta cutoff at depth "+currentDepth+": "+bestAlpha+" >= "+beta+"");
+		                return bestAlpha;
+		            }
+		            alpha = Math.max(alpha, bestAlpha);
+				} else {
+					if (result < bestBeta) {
+						bestBeta = result;
+						//System.out.println("Max: New best:"+result);
+						bestMove = thisMove;
+						bestNewPath = newPath;
+					}
+		            // Cutoff
+		            if (bestBeta <= alpha) {
+		                // No need to update bestMove or bestNewPath because it this part of the tree will be pruned
+		                //console.log("Alpha cutoff at depth "+currentDepth+": "+bestBeta+" <= "+alpha+"");
+		                return bestBeta;
+		            }
+					beta = Math.min(beta, bestBeta);
+				}	        
+			}
+		}
+		if (currentDepth == 0) {
+			System.nanoTime();
+		}
+		//bestPath = bestPath, bestMove, bestNewPath
+		bestPath.add(bestMove);
+		for (GameAction[] gameAction : bestNewPath) {
+			bestPath.add(gameAction);
+		}
+	    if (maximizing == true) {
+	        return bestAlpha;
+	    } else {
+	        return bestBeta;
+	    }
+	};
 }

@@ -468,7 +468,7 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.Minimax",
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
 							//"za.co.entelect.competition.bots.MCTS",
-							"za.co.entelect.competition.bots.MinimaxFixedDepth4",
+							"za.co.entelect.competition.bots.MinimaxFixedDepth12",
 							//"za.co.entelect.competition.bots.Endgame",
 							"za.co.entelect.competition.bots.Random",
 							"map.txt",

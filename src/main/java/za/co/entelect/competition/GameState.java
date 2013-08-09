@@ -481,11 +481,11 @@ public class GameState {
 			ArrayList<GameAction> actions = new ArrayList<GameAction>();
 			
 			if (me.isAlive()) {
-				for (int i = 0; i < 4; i++) {
-					actions.add(new GameAction(GameAction.MOVE, GameAction.NORTH + i));
-				}
 				if (!this.bullets[unitCode - 2].isAlive()) {
 					actions.add(new GameAction(GameAction.FIRE, GameAction.NORTH));
+				}
+				for (int i = 0; i < 4; i++) {
+					actions.add(new GameAction(GameAction.MOVE, GameAction.NORTH + i));
 				}
 			}
 			actions.add(new GameAction(GameAction.NONE, GameAction.NORTH));

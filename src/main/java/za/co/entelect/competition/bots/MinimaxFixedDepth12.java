@@ -12,7 +12,7 @@ public class MinimaxFixedDepth12 extends Minimax {
 	}
 
 	@Override
-	public GameAction[] getActions(GameState gameState, int timeLimitMS) {		
+	public int[] getActions(GameState gameState, int timeLimitMS) {		
 		return super.getActions(gameState, timeLimitMS);
 	}
 }

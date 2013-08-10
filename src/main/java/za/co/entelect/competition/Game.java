@@ -99,10 +99,10 @@ public class Game {
 	public void setResult(Result result) {
 		this.result = result;
 	}
-	public boolean nextTick(GameAction[] overrideActions, GameAction[] performedActions, int timeLimitMS) {
-		GameAction[] p1Moves = player1.getActions(this.gameState, timeLimitMS);
-		GameAction[] p2Moves = player2.getActions(this.gameState, timeLimitMS);
-		GameAction[] actions = new GameAction[4];
+	public boolean nextTick(int[] overrideActions, int[] performedActions, int timeLimitMS) {
+		int[] p1Moves = player1.getActions(this.gameState, timeLimitMS);
+		int[] p2Moves = player2.getActions(this.gameState, timeLimitMS);
+		int[] actions = new int[4];
 		
 		actions[0] = p1Moves[0];
 		actions[1] = p1Moves[1];
@@ -110,10 +110,10 @@ public class Game {
 		actions[3] = p2Moves[1];
 		
 		for (int i = 0; i < 4; i++) {
-			if (actions[i] == null) {
-				actions[i] = new GameAction(GameAction.NONE, GameAction.NORTH);
+			if (actions[i] == -1) {
+				actions[i] = GameAction.ACTION_NONE;
 			}
-			if (overrideActions != null && overrideActions[i] != null) {
+			if (overrideActions != null && overrideActions[i] != -1) {
 				this.gameState.getTanks()[i].setNextAction(overrideActions[i]);
 			} else {
 				this.gameState.getTanks()[i].setNextAction(actions[i]);
@@ -200,28 +200,28 @@ public class Game {
 					map[y][x] = 1;
 				} else if (c == 'A') {
 					if (tanks[0] == null) {
-						tanks[0] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						tanks[0] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
 						x++;
 					} else {
 						map[y][x] = 0;
 					}
 				} else if (c == 'B') {
 					if (tanks[1] == null) {
-						tanks[1] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						tanks[1] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
 						x++;
 					} else {
 						map[y][x] = 0;
 					}
 				} else if (c == 'X') {
 					if (tanks[2] == null) {
-						tanks[2] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						tanks[2] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
 						x++;
 					} else {
 						map[y][x] = 0;
 					}
 				} else if (c == 'Y') {
 					if (tanks[3] == null) {
-						tanks[3] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), null);
+						tanks[3] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
 						x++;
 					} else {
 						map[y][x] = 0;
@@ -252,7 +252,7 @@ public class Game {
 		for (int i = 0; i < tanks.length; i++) {
 			Tank t = tanks[i];
 			if (tanks[i] == null) {
-				tanks[i] = new Tank(new Point(0,0), 2, null, false);
+				tanks[i] = new Tank(new Point(0,0), 2, -1, false);
 				continue;
 			}
 			for (int y2 = 0; y2 < GameState.tankSize; y2++) {

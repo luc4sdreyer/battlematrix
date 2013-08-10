@@ -162,7 +162,7 @@ public class App
 			ArrayList<za.co.entelect.challenge.Action> actions = new ArrayList<za.co.entelect.challenge.Action>();			
 
 			if (playStyle.equals("Client1")) {
-				GameAction[] gameActions = stupidBot.getActions(xGameState, 3000);
+				int[] gameActions = stupidBot.getActions(xGameState, 3000);
 				for (int i = 0; i < 2; i++) {
 					Tank tank = xGameState.getTanks()[i];
 					if (!tank.isAlive()) {
@@ -172,11 +172,11 @@ public class App
 					actions.add(action);
 				}
 			} else if (playStyle.equals("Fire")) {
-				actions.add(GameState.XActionToEAction(new GameAction(GameAction.FIRE, GameAction.NONE)));
-				actions.add(GameState.XActionToEAction(new GameAction(GameAction.FIRE, GameAction.NONE)));
+				actions.add(GameState.XActionToEAction(GameAction.ACTION_FIRE));
+				actions.add(GameState.XActionToEAction(GameAction.ACTION_FIRE));
 			} else if (playStyle.equals("North")) {
-				actions.add(GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.NORTH)));
-				actions.add(GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.NORTH)));
+				actions.add(GameState.XActionToEAction(GameAction.ACTION_MOVE_NORTH));
+				actions.add(GameState.XActionToEAction(GameAction.ACTION_MOVE_NORTH));
 			} else if (playStyle.equals("FireMove")) {
 				for (int i = 2*playerIdx; i < 2*playerIdx + 2; i++) {
 					Tank tank = xGameState.getTanks()[i];
@@ -187,9 +187,9 @@ public class App
 
 					if (xGameState.getBullets()[i].isAlive()) {
 						if (tank.getPosition().y < xGameState.getMap().length/2) {
-							action = GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.NORTH));
+							action = GameState.XActionToEAction(GameAction.ACTION_MOVE_NORTH);
 						} else {
-							action = GameState.XActionToEAction(new GameAction(GameAction.MOVE, GameAction.SOUTH));
+							action = GameState.XActionToEAction(GameAction.ACTION_MOVE_SOUTH);
 						}
 					} else {
 						action = za.co.entelect.challenge.Action.FIRE;

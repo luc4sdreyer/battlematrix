@@ -123,7 +123,7 @@ public class AppOld
 			ArrayList<za.co.entelect.challenge.Action> actions = new ArrayList<za.co.entelect.challenge.Action>();			
 			
 			if (myName.equals("Client1")) {
-				GameAction[] gameActions = stupidBot.getActions(xGameState, 3000);
+				int[] gameActions = stupidBot.getActions(xGameState, 3000);
 				for (int i = 0; i < 2; i++) {
 					Tank tank = xGameState.getTanks()[i];
 					if (!tank.isAlive()) {

@@ -113,7 +113,7 @@ public class AppRoTeD
 			
 			ArrayList<Actions> actions = new ArrayList<Actions>();			
 			
-			GameAction[] gameActions = stupidBot.getActions(xGameState, 3000);
+			int[] gameActions = stupidBot.getActions(xGameState, 3000);
 			for (int i = 0; i < 2; i++) {
 				Tank tank = xGameState.getTanks()[i];
 				if (!tank.isAlive()) {

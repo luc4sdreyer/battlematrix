@@ -1,5 +1,7 @@
 package za.co.entelect.competition.bots;
 
+import java.util.Arrays;
+
 import za.co.entelect.competition.GameAction;
 import za.co.entelect.competition.GameState;
 
@@ -11,8 +13,9 @@ public class MCTS extends Bot {
 	}
 
 	@Override
-	public GameAction[] getActions(GameState gameState, int timeLimitMS) {
-		GameAction[] gameActions = new GameAction[2];
+	public int[] getActions(GameState gameState, int timeLimitMS) {
+		int[] gameActions = new int[2];
+		Arrays.fill(gameActions, -1);
 		
 		if (gameState.isActive()) {
 			TreeNode.origin = gameState;

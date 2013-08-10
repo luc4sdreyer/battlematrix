@@ -6,7 +6,7 @@ import za.co.entelect.competition.GameState;
 public abstract class Bot {
 	private int playerIndex;
 	private String name;
-	protected GameAction[] gameActions;
+	protected int[] gameActions;
 	protected int debugLevel;
 	
 	public Bot(int playerIndex) {
@@ -28,10 +28,10 @@ public abstract class Bot {
 	public void setName(String name) {
 		this.name = name;
 	}
-	public GameAction[] getGameActions() {
+	public int[] getGameActions() {
 		return gameActions;
 	}
-	public void setGameActions(GameAction[] gameActions) {
+	public void setGameActions(int[] gameActions) {
 		this.gameActions = gameActions;
 	}
 	public int getDebugLevel() {
@@ -40,5 +40,5 @@ public abstract class Bot {
 	public void setDebugLevel(int debugLevel) {
 		this.debugLevel = debugLevel;
 	}
-	public abstract GameAction[] getActions(GameState gameState, int timeLimitMS);
+	public abstract int[] getActions(GameState gameState, int timeLimitMS);
 }

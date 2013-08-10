@@ -4,14 +4,14 @@ import java.awt.Point;
 
 
 public class Tank extends Unit{
-	private GameAction nextAction;
+	private int nextAction;
 	private Point prevPosition;
 	private int ID;
-	public Tank(Point position, int rotation, GameAction nextAction) {
+	public Tank(Point position, int rotation, int nextAction) {
 		super(position, rotation);
 		this.nextAction = nextAction;
 	}
-	public Tank(Point position, int rotation, GameAction nextAction, boolean alive) {
+	public Tank(Point position, int rotation, int nextAction, boolean alive) {
 		super(position, rotation, alive);
 		this.nextAction = nextAction;
 	}
@@ -33,10 +33,10 @@ public class Tank extends Unit{
 	public void setPrevPosition(Point prevPosition) {
 		this.prevPosition = prevPosition;
 	}
-	public GameAction getNextAction() {
+	public int getNextAction() {
 		return nextAction;
 	}
-	public void setNextAction(GameAction nextAction) {
+	public void setNextAction(int nextAction) {
 		this.nextAction = nextAction;
 	}
 	public int getID() {
@@ -46,10 +46,10 @@ public class Tank extends Unit{
 		ID = iD;
 	}
 	public void clearNextAction() {
-		this.nextAction = null;
+		this.nextAction = -1;
 	}
 	public boolean hasNextAction() {
-		if (this.nextAction != null) {
+		if (this.nextAction != -1) {
 			return true;
 		} else {
 			return false;	

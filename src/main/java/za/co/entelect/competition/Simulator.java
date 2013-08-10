@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -16,11 +17,11 @@ public class Simulator implements Runnable {
 	public static Connection connection = null;
 	
 	private Game game;
-	private ArrayList<GameAction>[] moveList;
+	private ArrayList<Integer>[] moveList;
 	private int timeLimit = 100;
 	private Result result;	
 
-	public Simulator(Result result, ArrayList<String> file, ArrayList<GameAction>[] moveList, String bot1, String bot2) {
+	public Simulator(Result result, ArrayList<String> file, ArrayList<Integer>[] moveList, String bot1, String bot2) {
 		this.game = new Game(
 				bot1,
 				bot2,
@@ -43,7 +44,8 @@ public class Simulator implements Runnable {
 		boolean active = true;
 
 		while(active) {
-			GameAction[] overrideActions = new GameAction[4];
+			int[] overrideActions = new int[4];
+			Arrays.fill(overrideActions, -1);
 
 			for (int i = 0; i < 4; i++) {
 				if (moveList != null && this.game.getGameState().getTickCount() < moveList[i].size()) {
@@ -88,7 +90,7 @@ public class Simulator implements Runnable {
 				System.out.println("Failed to make connection!");
 			}
 		} else {
-			numSims = 100;
+			numSims = 1;
 		}
 
 
@@ -97,7 +99,7 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 10;
+				numTests = 1000;
 			}
 			long time = System.nanoTime();
 			ExecutorService executor = Executors.newFixedThreadPool(numThreads);
@@ -116,10 +118,11 @@ public class Simulator implements Runnable {
 				
 				gameFile = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0).toStringList();
 			}
-			ArrayList<GameAction>[] moveList = null; //ImageDrawingApplet.loadMoveList();
+			ArrayList<Integer>[] moveList = null; //ImageDrawingApplet.loadMoveList();
 
 			String bot1 =
-					"za.co.entelect.competition.bots.Endgame"
+					"za.co.entelect.competition.bots.Random"
+					//"za.co.entelect.competition.bots.Endgame"
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"

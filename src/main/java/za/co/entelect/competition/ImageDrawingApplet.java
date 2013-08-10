@@ -2,7 +2,9 @@ package za.co.entelect.competition;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.awt.*;
@@ -15,9 +17,9 @@ import javax.swing.*;
 
 class UserInput {
 	private Calendar timePressed;
-	private GameAction action;
+	private int action;
 	private boolean pressed;
-	public UserInput(Calendar timePressed, GameAction action, boolean pressed) {
+	public UserInput(Calendar timePressed, int action, boolean pressed) {
 		super();
 		this.timePressed = timePressed;
 		this.action = action;
@@ -29,10 +31,10 @@ class UserInput {
 	public void setTimePressed(Calendar timePressed) {
 		this.timePressed = timePressed;
 	}
-	public GameAction getAction() {
+	public int getAction() {
 		return action;
 	}
-	public void setAction(GameAction action) {
+	public void setAction(int action) {
 		this.action = action;
 	}
 	public boolean isPressed() {
@@ -433,7 +435,7 @@ public class ImageDrawingApplet extends JApplet {
 	public long stateTimeNS = 0;
 	public Object syncObject;							// syncObject is used to sync the animation and logic threads.
 	public BufferedWriter fileWriter;
-	public ArrayList<GameAction>[] moveList;
+	public ArrayList<Integer>[] moveList;
     //private GameAction p1reqAction;
     //private GameAction p1reqAction2;
     private UserInput[] userInput;   
@@ -526,7 +528,8 @@ public class ImageDrawingApplet extends JApplet {
 	public void generateNextGameState() {
 		//Util.print("Applet got timer update!");
 		//System.out.println(game.getGameState().toString());	
-		GameAction[] overrideActions = new GameAction[4];
+		int[] overrideActions = new int[4];
+		Arrays.fill(overrideActions, -1);
 
 		for (int i = 0; i < 4; i++) {
 			if (moveList != null && this.game.getGameState().getTickCount() < moveList[i].size()) {
@@ -534,14 +537,14 @@ public class ImageDrawingApplet extends JApplet {
 			}		
 		}
 
-		GameAction p1A = null;
+		int p1A = -1;
 //		if (p1reqAction2 != null) {
 //			p1A = p1reqAction2;
 //		} else {
 //			p1A = p1reqAction;
 //		}
 		Calendar last = null;
-		GameAction userAction = null;
+		int userAction = -1;
 		for (int i = 0; i < this.userInput.length; i++) {			
 			if (this.userInput[i].isPressed()) {
 				if (i == 4) {
@@ -562,18 +565,19 @@ public class ImageDrawingApplet extends JApplet {
 			}
 		}
 		p1A = userAction;
-		if (p1A != null) {
+		if (p1A != -1) {
 			overrideActions[0] = p1A;
 		}
 		
-		GameAction[] realActions = new GameAction[4]; 
+		int[] realActions = new int[4];
+		Arrays.fill(realActions, -1);
 		
 		int timeLeft = (int) ((sleepTime*1000000 - (System.nanoTime() - stateTimeNS)) * 0.8 / 1000000);
 		this.game.nextTick(overrideActions, realActions, timeLeft);
 
 		try {
 			for (int i = 0; i < realActions.length; i++) {
-				fileWriter.write(realActions[i].toString());
+				fileWriter.write(GameAction.toString(realActions[i]));
 			}
 			fileWriter.write("\n");
 		} catch (IOException e) {
@@ -615,11 +619,11 @@ public class ImageDrawingApplet extends JApplet {
         //p1reqAction = new GameAction(GameAction.NONE, GameAction.GUI_NORTH);
         this.userInput = new UserInput[5];
        
-        this.userInput[0] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_NORTH), false);
-        this.userInput[1] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.EAST), false);
-        this.userInput[2] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.GUI_SOUTH), false);
-        this.userInput[3] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.MOVE, GameAction.WEST), false);
-        this.userInput[4] = new UserInput(Calendar.getInstance(), new GameAction(GameAction.FIRE, GameAction.GUI_NORTH), false);
+        this.userInput[0] = new UserInput(Calendar.getInstance(), GameAction.ACTION_MOVE_GUI_NORTH, false);
+        this.userInput[1] = new UserInput(Calendar.getInstance(), GameAction.ACTION_MOVE_EAST, false);
+        this.userInput[2] = new UserInput(Calendar.getInstance(), GameAction.ACTION_MOVE_GUI_SOUTH, false);
+        this.userInput[3] = new UserInput(Calendar.getInstance(), GameAction.ACTION_MOVE_WEST, false);
+        this.userInput[4] = new UserInput(Calendar.getInstance(), GameAction.ACTION_FIRE, false);
         
 
 		setFocusable(true);
@@ -664,7 +668,7 @@ public class ImageDrawingApplet extends JApplet {
 
 	}
 
-	public static ArrayList<GameAction>[] loadMoveList() {
+	public static ArrayList<Integer>[] loadMoveList() {
 		Scanner in = null;
 		try {
 			in = new Scanner(new File(".\\assets\\movelist.txt"));
@@ -682,9 +686,9 @@ public class ImageDrawingApplet extends JApplet {
 		in.close();		
 		
 		@SuppressWarnings("unchecked")
-		ArrayList<GameAction>[] moves = new ArrayList[4]; 
+		ArrayList<Integer>[] moves = new ArrayList[4]; 
 		for (int i = 0; i < moves.length; i++) {
-			moves[i] = new ArrayList<GameAction>();
+			moves[i] = new ArrayList<Integer>();
 		}
 		for (int row = 0; row < file.size(); row++) {
 			if (file.get(row).charAt(0) == 'X') {
@@ -693,22 +697,17 @@ public class ImageDrawingApplet extends JApplet {
 			StringTokenizer st = new StringTokenizer(file.get(row), ",");
 			while(st.hasMoreTokens()) {
 				String token = st.nextToken();
-				int type = 0;
-				int direction = 0;
-				switch (token.charAt(0)) {
-					case 'm': 	type = GameAction.MOVE;		break;
-					case 'f': 	type = GameAction.FIRE;		break;
-					case 'n': 	type = GameAction.NONE;		break;
-					default:	type = -1;
-				}
+				int action = 0;
 				switch (token.charAt(1)) {
-					case '0': 	direction = GameAction.GUI_NORTH;	break;
-					case '1': 	direction = GameAction.EAST;		break;
-					case '2': 	direction = GameAction.GUI_SOUTH;	break;
-					case '3': 	direction = GameAction.WEST;		break;
-					default:	direction = -1;
+					case '^': 	action = GameAction.ACTION_MOVE_GUI_NORTH;	break;
+					case '>': 	action = GameAction.ACTION_MOVE_EAST;		break;
+					case 'v': 	action = GameAction.ACTION_MOVE_GUI_SOUTH;	break;
+					case '<': 	action = GameAction.ACTION_MOVE_WEST;		break;
+					case 'F': 	action = GameAction.ACTION_FIRE;			break;
+					case '.': 	action = GameAction.ACTION_NONE;			break;
+					default:	action = -1;
 				}
-				GameAction newAction = new GameAction(type, direction);
+				int newAction = action;
 				moves[row].add(newAction);
 			}
 		}

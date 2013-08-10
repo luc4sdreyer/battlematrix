@@ -67,13 +67,13 @@ public class Util {
 		} 
 		
 		if (oldP.y < newP.y) {
-			return GameAction.NORTH;
+			return GameAction.ACTION_MOVE_NORTH;
 		} else if (oldP.y > newP.y) {
-			return GameAction.SOUTH;
+			return GameAction.ACTION_MOVE_SOUTH;
 		} else if (oldP.x < newP.x) {
-			return GameAction.EAST;
+			return GameAction.ACTION_MOVE_EAST;
 		} else if (oldP.x > newP.x) {
-			return GameAction.WEST;
+			return GameAction.ACTION_MOVE_WEST;
 		} else {
 			System.err.println("FATAL ERROR: getDirection(Point oldP, Point newP)");
 			return -1;

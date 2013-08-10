@@ -2,6 +2,7 @@ package za.co.entelect.competition.bots;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 
 import za.co.entelect.competition.GameAction;
@@ -22,8 +23,9 @@ public class Endgame extends Bot {
 	}
 
 	@Override
-	public GameAction[] getActions(GameState gameState, int timeLimitMS) {
-		GameAction[] gameActions = new GameAction[2];
+	public int[] getActions(GameState gameState, int timeLimitMS) {
+		int[] gameActions = new int[2];
+		Arrays.fill(gameActions, -1);
 		
 		
 		
@@ -100,9 +102,9 @@ public class Endgame extends Bot {
 					// If there is already a bullet fired rather just move closer to the target.
 					//
 					if (me.getRotation() == direction && !gameState.getBullets()[meIdx].isAlive()) {						
-						gameActions[0] = new GameAction(GameAction.FIRE, direction);
+						gameActions[0] = GameAction.ACTION_FIRE;
 					} else {
-						gameActions[0] = new GameAction(GameAction.MOVE, direction);
+						gameActions[0] = direction;
 					}
 				} else {
 					System.out.println("FATAL ERROR: Not on the target area!");
@@ -113,7 +115,7 @@ public class Endgame extends Bot {
 				} 
 				int direction = Util.getDirection(path.get(0).getP(), path.get(1).getP());
 				
-				gameActions[0] = new GameAction(GameAction.MOVE, direction);
+				gameActions[0] = direction;
 				
 				//if (me.getRotation() == direction) {
 				//
@@ -124,7 +126,7 @@ public class Endgame extends Bot {
 				//}
 			}
 		}
-		gameActions[1] = new GameAction(GameAction.NONE, 0);
+		gameActions[1] = GameAction.ACTION_NONE;
 		return gameActions;
 	}
 

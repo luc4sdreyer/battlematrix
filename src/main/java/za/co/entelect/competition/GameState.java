@@ -224,7 +224,7 @@ public class GameState {
 				
 				for (int j = 0; j < eUnits.length; j++) {
 					System.out.println("Got info for unit with ID=" + eUnits[j].getId());
-					newTanks[i*2 + j] = new Tank(new Point(eUnits[j].getX() - 2,eUnits[j].getY() - 2), EDirectionToXRotation(eUnits[j].getDirection()), null, true);
+					newTanks[i*2 + j] = new Tank(new Point(eUnits[j].getX() - 2,eUnits[j].getY() - 2), EDirectionToXRotation(eUnits[j].getDirection()), -1, true);
 					newTanks[i*2 + j].setID(eUnits[j].getId());
 				}
 			}
@@ -308,7 +308,7 @@ public class GameState {
 		}
 		for (int i = 0; i < newTanks.length; i++) {
 			if (newTanks[i] == null) {
-				newTanks[i] = new Tank(new Point(0,0), 2, null, false);
+				newTanks[i] = new Tank(new Point(0,0), 2, -1, false);
 			}
 			Tank t = newTanks[i];
 			if (!t.isAlive()) {
@@ -344,45 +344,37 @@ public class GameState {
 //		
 		return null;
 	}
-	public static za.co.entelect.challenge.Action XActionToEAction(GameAction xAction) {
+	public static za.co.entelect.challenge.Action XActionToEAction(int xAction) {
 		Action eAction = null;
-		switch (xAction.type) {
-			case GameAction.MOVE:
-				switch (xAction.direction) {
-					case GameAction.NORTH:	eAction = Action.DOWN;	break;
-					case GameAction.EAST:	eAction = Action.RIGHT;	break;
-					case GameAction.SOUTH:	eAction = Action.UP;	break;
-					case GameAction.WEST:	eAction = Action.LEFT;	break;
-				}
-				break;
-			case GameAction.FIRE:	eAction = Action.FIRE;	break;
-			case GameAction.NONE:	eAction = Action.NONE;	break;
+		switch (xAction) {
+			case GameAction.ACTION_MOVE_NORTH:	eAction = Action.DOWN;	break;
+			case GameAction.ACTION_MOVE_EAST:	eAction = Action.RIGHT;	break;
+			case GameAction.ACTION_MOVE_SOUTH:	eAction = Action.UP;	break;
+			case GameAction.ACTION_MOVE_WEST:	eAction = Action.LEFT;	break;
+			case GameAction.ACTION_FIRE:	eAction = Action.FIRE;	break;
+			case GameAction.ACTION_NONE:	eAction = Action.NONE;	break;
 		}
 		return eAction;
 	}
-	public static Actions XActionToRAction(GameAction xAction) {
+	public static Actions XActionToRAction(int xAction) {
 		Actions rAction = null;
-		switch (xAction.type) {
-			case GameAction.MOVE:
-				switch (xAction.direction) {
-					case GameAction.NORTH:	rAction = Actions.UP;		break;
-					case GameAction.EAST:	rAction = Actions.RIGHT;	break;
-					case GameAction.SOUTH:	rAction = Actions.DOWN;		break;
-					case GameAction.WEST:	rAction = Actions.LEFT;		break;
-				}
-				break;
-			case GameAction.FIRE:	rAction = Actions.FIRE;	break;
-			case GameAction.NONE:	rAction = Actions.NONE;	break;
+		switch (xAction) {
+			case GameAction.ACTION_MOVE_NORTH:	rAction = Actions.UP;		break;
+			case GameAction.ACTION_MOVE_EAST:	rAction = Actions.RIGHT;	break;
+			case GameAction.ACTION_MOVE_SOUTH:	rAction = Actions.DOWN;		break;
+			case GameAction.ACTION_MOVE_WEST:	rAction = Actions.LEFT;		break;
+			case GameAction.ACTION_FIRE:	rAction = Actions.FIRE;	break;
+			case GameAction.ACTION_NONE:	rAction = Actions.NONE;	break;
 		}
 		return rAction;
 	}
 	public static int EDirectionToXRotation(za.co.entelect.challenge.Direction eDirection) {
 		int rotation = -1;
 		switch (eDirection.getValue()) {
-			case "UP":		rotation = GameAction.SOUTH;	break;
-			case "RIGHT":	rotation = GameAction.EAST;		break;
-			case "DOWN":	rotation = GameAction.NORTH;	break;
-			case "LEFT":	rotation = GameAction.WEST;		break;
+			case "UP":		rotation = GameAction.ACTION_MOVE_SOUTH;	break;
+			case "RIGHT":	rotation = GameAction.ACTION_MOVE_EAST;		break;
+			case "DOWN":	rotation = GameAction.ACTION_MOVE_NORTH;	break;
+			case "LEFT":	rotation = GameAction.ACTION_MOVE_WEST;		break;
 		}
 		return rotation;
 	}
@@ -475,20 +467,20 @@ public class GameState {
 //		}
 //		return moves;
 //	}
-	public ArrayList<GameAction> getTankActions(int unitCode) {
+	public ArrayList<Integer> getTankActions(int unitCode) {
 		if (Unit.isTank(unitCode)) {
 			Tank me = (Tank) getUnit(unitCode);
-			ArrayList<GameAction> actions = new ArrayList<GameAction>();
+			ArrayList<Integer> actions = new ArrayList<Integer>();
 			
 			if (me.isAlive()) {
 				if (!this.bullets[unitCode - 2].isAlive()) {
-					actions.add(new GameAction(GameAction.FIRE, GameAction.NORTH));
+					actions.add(GameAction.ACTION_FIRE);
 				}
 				for (int i = 0; i < 4; i++) {
-					actions.add(new GameAction(GameAction.MOVE, GameAction.NORTH + i));
+					actions.add(GameAction.ACTION_MOVE_NORTH + i);
 				}
 			}
-			actions.add(new GameAction(GameAction.NONE, GameAction.NORTH));
+			actions.add(GameAction.ACTION_NONE);
 			
 			return actions;
 		} else {		
@@ -907,11 +899,11 @@ public class GameState {
 			}
 			if (!t.hasNextAction()) {
 				System.err.println("TANK[" + i + "] has no action set, doing NONE");
-				t.setNextAction(new GameAction(GameAction.NONE, 0));
+				t.setNextAction(GameAction.ACTION_NONE);
 			}
-			if (t.getNextAction().type < GameAction.MOVE || t.getNextAction().type > GameAction.NONE) {
+			if (t.getNextAction() < GameAction.ACTION_MOVE_NORTH || t.getNextAction() > GameAction.ACTION_NONE) {
 				System.err.println("TANK[" + i + "] has invalid action set, doing NONE");
-				t.setNextAction(new GameAction(GameAction.NONE, 0));
+				t.setNextAction(GameAction.ACTION_NONE);
 			}
 		}
 
@@ -931,17 +923,17 @@ public class GameState {
 			if (!t.isAlive()) {
 				continue;
 			}
-			if (t.getNextAction().type == GameAction.NONE) {
+			if (t.getNextAction() == GameAction.ACTION_NONE) {
 				t.setPosition(t.getPosition());
-			} else if (t.getNextAction().type == GameAction.MOVE) {
-				final Point nextP = Util.movePoint(t.getPosition(), t.getNextAction().direction);
+			} else if (t.getNextAction() <= GameAction.ACTION_MOVE_WEST) {
+				final Point nextP = Util.movePoint(t.getPosition(), t.getNextAction());
 				final Point oldP = t.getPosition();
 
-				t.setRotation(t.getNextAction().direction);
+				t.setRotation(t.getNextAction());
 				final Point toAdd;
 				final Point toClear;
-				if (t.getNextAction().direction == GameAction.NORTH || t.getNextAction().direction == GameAction.SOUTH) {				
-					if (t.getNextAction().direction == GameAction.NORTH) {
+				if (t.getNextAction() == GameAction.ACTION_MOVE_NORTH || t.getNextAction() == GameAction.ACTION_MOVE_SOUTH) {				
+					if (t.getNextAction() == GameAction.ACTION_MOVE_NORTH) {
 						toAdd = new Point(oldP.x, oldP.y + tankSize);
 						toClear = new Point(oldP.x, oldP.y);
 					} else {
@@ -972,7 +964,7 @@ public class GameState {
 						t.setPosition(t.getPosition());
 					}
 				} else {				
-					if (t.getNextAction().direction == GameAction.EAST) {
+					if (t.getNextAction() == GameAction.ACTION_MOVE_EAST) {
 						toAdd = new Point(oldP.x + tankSize, oldP.y);
 						toClear = new Point(oldP.x, oldP.y);
 					} else {
@@ -1020,7 +1012,7 @@ public class GameState {
 			if (!t.isAlive()) {
 				continue;
 			}
-			if (t.getNextAction().type == GameAction.FIRE) {
+			if (t.getNextAction() == GameAction.ACTION_FIRE) {
 				if (!bullets[i].isAlive()) {
 					Point bulletPosition = new Point(t.getPosition().x + tankSize/2, t.getPosition().y + tankSize/2);
 					bulletPosition = Util.movePoint(bulletPosition, t.getRotation());
@@ -1361,7 +1353,7 @@ public class GameState {
 				//
 				
 				//if (obstacleUnitCode == Unit.WALL) {
-				if (me.getRotation() == GameAction.NORTH || me.getRotation() == GameAction.SOUTH) {
+				if (me.getRotation() == GameAction.ACTION_MOVE_NORTH || me.getRotation() == GameAction.ACTION_MOVE_SOUTH) {
 					deadListPoint.add(nextP);
 					for (int x = nextP.x - (tankSize/2); x <= nextP.x + (tankSize/2); x++) {
 						if (x >= 0

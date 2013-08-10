@@ -92,7 +92,7 @@ public class MapGenerator {
 		Bullet[] newBullets = new Bullet[4];
 
 		for (int i = 0; i < newTanks.length; i++) {
-			newTanks[i] = new Tank(new Point(0,0), 2, null, false);
+			newTanks[i] = new Tank(new Point(0,0), 2, -1, false);
 		}
 
 		for (int i = 0; i < newTanks.length; i++) {
@@ -125,7 +125,7 @@ public class MapGenerator {
 			//	alive = false;
 			//}
 			
-			newTanks[i] = new Tank(p, r.nextInt(4), null, alive);			
+			newTanks[i] = new Tank(p, r.nextInt(4), -1, alive);			
 			
 			Tank t = newTanks[i];
 			if (!t.isAlive()) {

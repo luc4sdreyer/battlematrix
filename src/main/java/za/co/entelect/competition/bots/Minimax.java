@@ -23,19 +23,19 @@ public class Minimax extends Bot {
 	}
 
 	@Override
-	public GameAction[] getActions(GameState gameState, int timeLimitMS) {
+	public int[] getActions(GameState gameState, int timeLimitMS) {
 		boolean doAlphaBetaPruning = true;
-		ArrayList<GameAction[]> actions = minimaxID(gameState, doAlphaBetaPruning, timeLimitMS);
+		ArrayList<int[]> actions = minimaxID(gameState, doAlphaBetaPruning, timeLimitMS);
 		if (actions.isEmpty()) {
 			actions.add(Random.getActionsStatic());
 			actions.add(Random.getActionsStatic());
 			System.out.println("\tMinimax using RANDOM move instead.");
 		}
-		GameAction[] action = actions.get(getPlayerIndex());
+		int[] action = actions.get(getPlayerIndex());
 		if (this.debugLevel > 0) {
 			System.out.println();
 			for (int i = 0; i < actions.size(); i += 2) {
-				System.out.println("\t"+ actions.size()+" Minimax actions: "+actions.get(i+0)[0]+" "+actions.get(i+0)[1]+ " "+actions.get(i+1)[0]+" "+actions.get(i+1)[1]);
+				System.out.println("\t"+ actions.size()+" Minimax actions: "+GameAction.toString(actions.get(i+0)[0])+" "+GameAction.toString(actions.get(i+0)[1])+ " "+GameAction.toString(actions.get(i+1)[0])+" "+GameAction.toString(actions.get(i+1)[1]));
 			}
 		}
 		
@@ -47,7 +47,7 @@ public class Minimax extends Bot {
 	 *  - with Iterative deepening
 	 *  - without AB pruning
 	 */
-	public ArrayList<GameAction[]> minimaxID(GameState gameState, boolean doAlphaBetaPruning, 
+	public ArrayList<int[]> minimaxID(GameState gameState, boolean doAlphaBetaPruning, 
 			int timeLimitMS) {
 		this.timer = System.nanoTime();
 		long timeLimit = timeLimitMS;
@@ -57,7 +57,7 @@ public class Minimax extends Bot {
 			timeLimit = Long.MAX_VALUE;
 		}
 
-		ArrayList<GameAction[]> bestPath = new ArrayList<GameAction[]>();
+		ArrayList<int[]> bestPath = new ArrayList<int[]>();
 
 		//int negInf = -1000000000;
 		//int posInf = 1000000000;
@@ -66,7 +66,7 @@ public class Minimax extends Bot {
 		int deepestPly = 0;
 		for (int depthLimit = 2; depthLimit <= maxDepthLimit; depthLimit += 2) {
 			GameState newState = gameState.clone();     
-			ArrayList<GameAction[]> tempBestPath = new ArrayList<GameAction[]>();
+			ArrayList<int[]> tempBestPath = new ArrayList<int[]>();
 			int tempAlpha = 0;
 
 //			if (doAlphaBetaPruning == true) {                
@@ -113,8 +113,8 @@ public class Minimax extends Bot {
 		return bestPath;
 	};
 
-	public int MinimaxWithoutAB(ArrayList<GameAction[]> bestPath, long timeLimit,
-			int depthLimit, int currentDepth, GameState currentState, GameAction[] parentMove) throws OutOfTimeException {
+	public int MinimaxWithoutAB(ArrayList<int[]> bestPath, long timeLimit,
+			int depthLimit, int currentDepth, GameState currentState, int[] parentMove) throws OutOfTimeException {
 		long diff = System.nanoTime() - this.timer;
 		if (diff > timeLimit) {
 			throw new OutOfTimeException();
@@ -140,8 +140,8 @@ public class Minimax extends Bot {
 			alpha = GameState.POS_INF;
 		}
 
-		ArrayList<GameAction> movesTA = null;
-		ArrayList<GameAction> movesTB = null;	
+		ArrayList<Integer> movesTA = null;
+		ArrayList<Integer> movesTB = null;	
 		if (maximizing) {
 			movesTA = currentState.getTankActions(Unit.TANK1A);
 			movesTB = currentState.getTankActions(Unit.TANK1B);
@@ -150,17 +150,17 @@ public class Minimax extends Bot {
 			movesTB = currentState.getTankActions(Unit.TANK2B);
 		}
 		
-		GameAction[] bestMove = null;
-		ArrayList<GameAction[]> bestNewPath = null; 
+		int[] bestMove = null;
+		ArrayList<int[]> bestNewPath = null; 
 		for (int tA = 0; tA < movesTA.size(); tA++) {
 			for (int tB = 0; tB < movesTB.size(); tB++) {
 				GameState newState = null;
 
-				GameAction[] thisMove = new GameAction[2];
+				int[] thisMove = new int[2];
 				thisMove[0] = movesTA.get(tA);
 				thisMove[1] = movesTB.get(tB);
-				thisMove[0].level = currentDepth;
-				thisMove[1].level = currentDepth;
+				//thisMove[0].level = currentDepth;
+				//thisMove[1].level = currentDepth;
 				
 				if (maximizing) {
 					newState = currentState;
@@ -172,11 +172,11 @@ public class Minimax extends Bot {
 					newState.getTanks()[3].setNextAction(thisMove[1]);					
 					newState.nextTick();	
 				}
-				ArrayList<GameAction[]> newPath = new ArrayList<GameAction[]>();
+				ArrayList<int[]> newPath = new ArrayList<int[]>();
 	
 				int result = this.MinimaxWithoutAB(newPath, timeLimit, depthLimit, currentDepth+1, newState, thisMove);
 				
-				if (thisMove[0].type == GameAction.FIRE && result == -1000000) {
+				if (thisMove[0] == GameAction.ACTION_FIRE && result == -1000000) {
 					//System.out.println();
 				}
 				
@@ -206,14 +206,14 @@ public class Minimax extends Bot {
 		}
 		//bestPath = bestPath, bestMove, bestNewPath
 		bestPath.add(bestMove);
-		for (GameAction[] gameAction : bestNewPath) {
+		for (int[] gameAction : bestNewPath) {
 			bestPath.add(gameAction);
 		}
 		return alpha;
 	};
 	
-	public int MinimaxWithAB(ArrayList<GameAction[]> bestPath, long timeLimit,
-			int depthLimit, int currentDepth, GameState currentState, GameAction[] parentMove,
+	public int MinimaxWithAB(ArrayList<int[]> bestPath, long timeLimit,
+			int depthLimit, int currentDepth, GameState currentState, int[] parentMove,
 			int alpha, int beta) throws OutOfTimeException {
 		long diff = System.nanoTime() - this.timer;
 		if (diff > timeLimit) {
@@ -236,8 +236,8 @@ public class Minimax extends Bot {
 		int bestAlpha = GameState.NEG_INF;
 		int bestBeta  = GameState.POS_INF;
 
-		ArrayList<GameAction> movesTA = null;
-		ArrayList<GameAction> movesTB = null;	
+		ArrayList<Integer> movesTA = null;
+		ArrayList<Integer> movesTB = null;	
 		if (maximizing) {
 			movesTA = currentState.getTankActions(Unit.TANK1A);
 			movesTB = currentState.getTankActions(Unit.TANK1B);
@@ -246,17 +246,17 @@ public class Minimax extends Bot {
 			movesTB = currentState.getTankActions(Unit.TANK2B);
 		}
 		
-		GameAction[] bestMove = null;
-		ArrayList<GameAction[]> bestNewPath = null; 
+		int[] bestMove = null;
+		ArrayList<int[]> bestNewPath = null; 
 		for (int tA = 0; tA < movesTA.size(); tA++) {
 			for (int tB = 0; tB < movesTB.size(); tB++) {
 				GameState newState = null;
 
-				GameAction[] thisMove = new GameAction[2];
+				int[] thisMove = new int[2];
 				thisMove[0] = movesTA.get(tA);
 				thisMove[1] = movesTB.get(tB);
-				thisMove[0].level = currentDepth;
-				thisMove[1].level = currentDepth;
+				//thisMove[0].level = currentDepth;
+				//thisMove[1].level = currentDepth;
 				
 				if (maximizing) {
 					newState = currentState;
@@ -268,11 +268,11 @@ public class Minimax extends Bot {
 					newState.getTanks()[3].setNextAction(thisMove[1]);					
 					newState.nextTick();	
 				}
-				ArrayList<GameAction[]> newPath = new ArrayList<GameAction[]>();
+				ArrayList<int[]> newPath = new ArrayList<int[]>();
 	
 				int result = this.MinimaxWithAB(newPath, timeLimit, depthLimit, currentDepth+1, newState, thisMove, alpha, beta);
 				
-				if (thisMove[0].type == GameAction.FIRE && result == -1000000) {
+				if (thisMove[0] == GameAction.ACTION_FIRE && result == -1000000) {
 					//System.out.println();
 				}
 				
@@ -317,7 +317,7 @@ public class Minimax extends Bot {
 		}
 		//bestPath = bestPath, bestMove, bestNewPath
 		bestPath.add(bestMove);
-		for (GameAction[] gameAction : bestNewPath) {
+		for (int[] gameAction : bestNewPath) {
 			bestPath.add(gameAction);
 		}
 	    if (maximizing == true) {

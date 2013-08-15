@@ -13,7 +13,9 @@ import java.util.Queue;
 import java.util.Random;
 
 public class PathFind {
-
+	
+	public static final int GOAL_PREFERENCE_CLOSEST_TO_TARGET = 0;
+	public static final int GOAL_PREFERENCE_CLOSEST_TO_START = 1;
 
 	/**
 	 * Compares an A* search to a BFS. 
@@ -59,7 +61,7 @@ public class PathFind {
 			grid[start.p.y][start.p.x] = false;
 			grid[goal.p.y][goal.p.x] = false;
 
-			ArrayList<PointS> tempBfsResult = BFSFinder(start, goal, grid, new int[1], gameState);
+			ArrayList<PointS> tempBfsResult = BFSFinder(start, goal, grid, new int[1], gameState, PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET);
 			if (tempBfsResult.isEmpty()) {
 				j--;
 				continue;
@@ -83,7 +85,7 @@ public class PathFind {
 					totalTimeAstar += System.nanoTime() - timer;
 				} else if (choice == 1) {
 					timer = System.nanoTime();
-					bfsResult = BFSFinder(start, goal, grid, totalNodesVisitedBFS, gameState);
+					bfsResult = BFSFinder(start, goal, grid, totalNodesVisitedBFS, gameState, PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET);
 					totalTimeBFS += System.nanoTime() - timer;
 				} else if (choice == 2) {
 					timer = System.nanoTime();
@@ -154,13 +156,26 @@ public class PathFind {
 		System.out.println("NumImpossible: "+NumImpossible);
 	}
 	
-	public static ArrayList<PointS> BFSFinder(PointS start, PointS goal, boolean[][] grid, int[] totalNodesVisited, GameState gameState) {
+	public static ArrayList<PointS> BFSFinder(PointS start, PointS goal, boolean[][] grid, int[] totalNodesVisited, 
+			GameState gameState, int goalPreference) {
 		HashSet<Point> goalSet = new HashSet<Point>();
 		goalSet.add(goal.p);
-		return BFSFinder(start, goalSet, goal.p, grid, totalNodesVisited, gameState);
+		return BFSFinder(start, goalSet, goal.p, grid, totalNodesVisited, gameState, goalPreference, null, null);
 	}
 
-	public static ArrayList<PointS> BFSFinder(PointS start, HashSet<Point> goalArea, Point goalCenter, boolean[][] grid, int[] totalNodesVisited, GameState gameState) {
+	public static ArrayList<PointS> BFSFinder(PointS start, HashSet<Point> goalArea, Point goalCenter, boolean[][] grid, 
+			int[] totalNodesVisited, GameState gameState, int goalPreference, int[][] bulletGrid, int[] ticksUntilBulletHit) {
+		if (goalArea.contains(start.p)) {
+			if ((ticksUntilBulletHit != null) && (bulletGrid[start.p.y][start.p.x] - start.g  < ticksUntilBulletHit[0])) {
+				ticksUntilBulletHit[0] = bulletGrid[start.p.y][start.p.x] - start.g;
+			}
+			return new ArrayList<PointS>();
+		}
+		
+		if (ticksUntilBulletHit != null) {
+			ticksUntilBulletHit[0] = GameState.maxNumBlocks;
+		}
+		
 		Queue<PointS> queue = new LinkedList<PointS>();
 		queue.add(start);
 		PointS current = null;
@@ -186,6 +201,12 @@ public class PathFind {
 			for (PointS neigh : neighs) {
 				int tentative_g_score = current.g + 1;
 				if (!visited[neigh.p.y][neigh.p.x]) {
+					//
+					// If there is a bulletGrid, use it to avoid bullets
+					//
+					if (bulletGrid != null && bulletGrid[neigh.p.y][neigh.p.x] <= tentative_g_score) {
+						continue;
+					}
 					neigh.g = tentative_g_score;
 					visited[neigh.p.y][neigh.p.x] = true;
 					came_from[neigh.p.y][neigh.p.x] = current;
@@ -201,16 +222,30 @@ public class PathFind {
 			int min = Integer.MAX_VALUE;
 			int minIdx = -1;
 			for (int i = 0; i < reachableGoals.size(); i++) {
-				if (Util.mDist(reachableGoals.get(i).p, goalCenter) < min) {
-					min = Util.mDist(reachableGoals.get(i).p, goalCenter);
-					minIdx = i;
+				if (goalPreference == PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET) {
+					if (Util.mDist(reachableGoals.get(i).p, goalCenter) < min) {
+						min = Util.mDist(reachableGoals.get(i).p, goalCenter);
+						minIdx = i;
+					}
+				} else if (goalPreference == PathFind.GOAL_PREFERENCE_CLOSEST_TO_START) {
+					if (Util.mDist(reachableGoals.get(i).p, start.p) < min) {
+						min = Util.mDist(reachableGoals.get(i).p, start.p);
+						minIdx = i;
+					}
 				}
 			}
 			PointS bestGoal = reachableGoals.get(minIdx);
+			
+			if ((ticksUntilBulletHit != null) && (bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g  < ticksUntilBulletHit[0])) {
+				ticksUntilBulletHit[0] = bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g;
+			}
 
 			shortestPath.add(bestGoal);
 			PointS prev = came_from[bestGoal.p.y][bestGoal.p.x];
 			while (!prev.equals(start)) {
+				if ((ticksUntilBulletHit != null) && (bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g  < ticksUntilBulletHit[0])) {
+					ticksUntilBulletHit[0] = bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g;
+				}
 				shortestPath.add(prev);
 				prev = came_from[prev.p.y][prev.p.x];
 			}
@@ -226,7 +261,7 @@ public class PathFind {
 
 
 	public static class PointS {
-		Point p;
+		public Point p;
 		int g;	// g(x) in A*
 		char direction;
 		public PointS(int X, int Y, int steps, char direction) {
@@ -767,7 +802,7 @@ public class PathFind {
 				} else if (grid[y][x]) {
 					map[y][x] = '#';
 				} else {
-					map[y][x] = ' ';
+					map[y][x] = '_';
 				}
 			}
 		}

@@ -1,6 +1,8 @@
 package za.co.entelect.competition.bots;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 //import java.util.Random;
@@ -20,7 +22,10 @@ public class TreeNode {
     
     static long numGames = 0;
     static long numTicks = 0;
+    static long numNodes = 0;
+    static long newTranspositionTableHits = 0;
     static GameState origin;
+    static HashMap<Long, Long> transpositionTable;
     
     // Timing
     static long timeTotalCloning = 0;
@@ -28,15 +33,16 @@ public class TreeNode {
     
     final int selectionFunction = SF_UCT;    
     int[] actions;
-    int playerIdx;			// This node's playerIdx refers to the player that has moved to get to this "state"
-    
+    int playerIdx;			// This node's playerIdx refers to the player that has moved to get to this "state"    
     TreeNode[] children;
     double nVisits;
     double totValue;
+	long ID;
     
     public TreeNode(int[] actions, int playerIdx) {
     	this.actions = actions;
     	this.playerIdx = playerIdx;
+    	this.ID = numNodes++;    	
     }
 
     //
@@ -166,6 +172,15 @@ public class TreeNode {
     	while (isActive && (visitedCursor[0] + 1 < visited.size())) {
     		int[] p1Moves = null;
 			int[] p2Moves = null;
+
+			Long matchID = transpositionTable.get(simGame.hashCodeLong());
+			if (matchID == null) {
+				transpositionTable.put(simGame.hashCodeLong(), visited.get(visitedCursor[0]).ID);					
+			} else {
+				if (matchID != visited.get(visitedCursor[0]).ID) {
+					newTranspositionTableHits++;
+				}
+			}
 		
 			p1Moves = visited.get(visitedCursor[0]++).actions;
 			p2Moves = visited.get(visitedCursor[0]++).actions;
@@ -216,6 +231,14 @@ public class TreeNode {
 			int[] p2Moves = null;
 			
 			if (visitedCursor[0] < visited.size()) {
+				Long matchID = transpositionTable.get(simGame.hashCodeLong());
+				if (matchID == null) {
+					transpositionTable.put(simGame.hashCodeLong(), visited.get(visitedCursor[0]).ID);					
+				} else {
+					if (matchID != visited.get(visitedCursor[0]).ID) {
+						newTranspositionTableHits++;
+					}
+				}
 				p1Moves = visited.get(visitedCursor[0]++).actions;
 			} else {
 				p1Moves = RandomLegal.getActionsStatic(simGame, 0);
@@ -241,7 +264,7 @@ public class TreeNode {
 			simGame.nextTick();
 			numTicks++;
 			
-			isActive = simGame.isActive();		
+			isActive = simGame.isActive();
     	}
     	
 		switch (simGame.getStatus()) {
@@ -261,4 +284,15 @@ public class TreeNode {
     public int arity() {
         return children == null ? 0 : children.length;
     }
+    
+    public double getSuccessRate() {
+    	return this.totValue / this.nVisits;
+    }
+
+	@Override
+	public String toString() {
+		return "TreeNode [actions=" + Arrays.toString(actions) + ", playerIdx="
+				+ playerIdx + ", nVisits=" + nVisits + ", totValue=" + totValue
+				+ "]";
+	}
 }

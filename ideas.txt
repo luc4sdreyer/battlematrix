@@ -61,7 +61,7 @@ ___________________________
 ___________________________
 
 1. draw bullet map. 5x5 area and don't write over the old part of the map.
-2. draw tank map. If tank's center area is less (not equal!) than the bullet number he can be there.
+2. draw tank map. If tank's center area is less (not equal!) than the bullet number he can be there. Therefore bullet number - tank number = number of ticks till hit
 
 _____##########__9__#####
 _____##########__8__#####
@@ -116,3 +116,36 @@ ___________________________
 __*112233445566778899____
 ___________________________
 ___________________________
+
+
+
+
+
+
+
+
+
+
+
+===============================================================================================================
+Maybe it's possible to solve a small part of the game
+
+On 15x15 map:
+t1 can be on 11*11*4 = 484 positions.
+t2 can be on 484 - (between 25 and 81)*4 = 272 positions.
+b1 and b2 can be on (11*15*2 - 50)*2 + 1 = 281 positions each.
+ = 10395057728 possible games.
+ 
+Speed: 3519 games/s, 173493 ticks/s
+ 
+BUT on an infinite plane, many positions are actually just copies of one another!
+
+
+
+
+
+=================================================================================================================
+Current plan:
+
+1. Develop a Brute bot that can beat Random most of the time.
+	a.	1v1 & 2v2 small map

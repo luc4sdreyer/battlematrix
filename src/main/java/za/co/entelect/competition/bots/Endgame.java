@@ -40,51 +40,49 @@ public class Endgame extends Bot {
 			if (path == null) {
 				path = null;
 				long time = System.currentTimeMillis(); 
-				for (int i = 0; i < 1000; i++) {
-					//
-					// Convert map to grid. 
-					//
-					int[][] map = gameState.getMap();
-					boolean[][] grid = new boolean[map.length][map[0].length];
-					for (int y = 0; y < grid.length; y++) {
-						for (int x = 0; x < grid[0].length; x++) {
-							if (map[y][x] == Unit.WALL || Unit.isBase(map[y][x])) {
-								grid[y][x] = true;
-							} else {
-								grid[y][x] = false;
-							}
+				//
+				// Convert map to grid. 
+				//
+				int[][] map = gameState.getMap();
+				boolean[][] grid = new boolean[map.length][map[0].length];
+				for (int y = 0; y < grid.length; y++) {
+					for (int x = 0; x < grid[0].length; x++) {
+						if (map[y][x] == Unit.WALL || Unit.isBase(map[y][x])) {
+							grid[y][x] = true;
+						} else {
+							grid[y][x] = false;
 						}
 					}
-					
-					//TODO: Assume that base units won't be in the absolute corner and on the edge.
-					//
-					// Generate start and goal nodes
-					//
-					int numWallsAllowed = 0;
-					Point startPoint = new Point();
-					HashSet<Point> goalArea = new HashSet<Point>();
-					PointS start = null;
-					path = new ArrayList<PointS>();
-					
-					// TODO: Here you can optimize by looking at all the paths, and then choosing the best one.
-					while(path.isEmpty() && numWallsAllowed < Math.max(map.length, map[0].length)) {					
-						goalArea = getGoalArea(gameState, map, startPoint, target, numWallsAllowed);
-						int[] totalNodesVisited = new int[1];
-						start = new PointS(startPoint.x, startPoint.y, 0, 'X');
-						path = PathFind.BFSFinder(start, goalArea, target, grid, totalNodesVisited, gameState);
-						
-						numWallsAllowed++;
-					}
-					
-					if (path.isEmpty()) {
-						System.err.println("Could not find a path");
-						active = false;
-						return Random.getActionsStatic();
-					}
-					
-					path.add(0, start);					
 				}
-				System.out.println("Time: " + (System.currentTimeMillis() - time));
+				
+				//TODO: Assume that base units won't be in the absolute corner and on the edge.
+				//
+				// Generate start and goal nodes
+				//
+				int numWallsAllowed = 0;
+				Point startPoint = new Point();
+				HashSet<Point> goalArea = new HashSet<Point>();
+				PointS start = null;
+				path = new ArrayList<PointS>();
+				
+				// TODO: Here you can optimize by looking at all the paths, and then choosing the best one.
+				while(path.isEmpty() && numWallsAllowed < Math.max(map.length, map[0].length)) {					
+					goalArea = getGoalArea(gameState, map, startPoint, target, numWallsAllowed);
+					int[] totalNodesVisited = new int[1];
+					start = new PointS(startPoint.x, startPoint.y, 0, 'X');
+					path = PathFind.BFSFinder(start, goalArea, target, grid, totalNodesVisited, gameState, PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET, null, null);
+					
+					numWallsAllowed++;
+				}
+				
+				if (path.isEmpty()) {
+					System.err.println("Could not find a path");
+					active = false;
+					return Random.getActionsStatic();
+				}
+				
+				path.add(0, start);
+				//System.out.println("Time: " + (System.currentTimeMillis() - time));
 			}
 			
 			int meIdx = getPlayerIndex()*2;

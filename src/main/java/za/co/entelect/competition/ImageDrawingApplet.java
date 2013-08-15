@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.awt.*;
@@ -447,11 +448,11 @@ public class ImageDrawingApplet extends JApplet {
 		final ImageDrawingApplet mainGUI = new ImageDrawingApplet();
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
-				try {
-					mainGUI.fileWriter.close();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
+//				try {
+//					mainGUI.fileWriter.close();
+//				} catch (IOException e1) {
+//					e1.printStackTrace();
+//				}
 				System.exit(0);
 			}
 		});
@@ -469,14 +470,16 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Minimax",
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
-							//"za.co.entelect.competition.bots.MCTS",
-							"za.co.entelect.competition.bots.MinimaxFixedDepth12",
+							"za.co.entelect.competition.bots.Brute",	
 							//"za.co.entelect.competition.bots.Endgame",
-							"za.co.entelect.competition.bots.Random",
+							"za.co.entelect.competition.bots.Random",			
+							//"za.co.entelect.competition.bots.MCTS",
+							//"za.co.entelect.competition.bots.DoNothing",
 							"map.txt",
 							//gameState,
 							//gameList,
 							false);
+		mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
 //		gameState.getTanks()[3].setAlive(false);
@@ -575,13 +578,21 @@ public class ImageDrawingApplet extends JApplet {
 		int timeLeft = (int) ((sleepTime*1000000 - (System.nanoTime() - stateTimeNS)) * 0.8 / 1000000);
 		this.game.nextTick(overrideActions, realActions, timeLeft);
 
-		try {
-			for (int i = 0; i < realActions.length; i++) {
-				fileWriter.write(GameAction.toString(realActions[i]));
+		if (this.game.getGameState().getStatus() == GameState.STATUS_ACTIVE) {
+			try {
+				for (int i = 0; i < realActions.length; i++) {
+					fileWriter.write(GameAction.toString(realActions[i]));
+				}
+				fileWriter.write("\n");
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			fileWriter.write("\n");
-		} catch (IOException e) {
-			e.printStackTrace();
+		} else {
+			try {
+				fileWriter.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		//long timeLeft = (sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000 - 100;
@@ -604,6 +615,9 @@ public class ImageDrawingApplet extends JApplet {
 		
 		if (this.game.getGameState().getStatus() != GameState.STATUS_ACTIVE) {
 			System.out.println(this.game.getGameState().getStatusString());
+			if (this.game.getGameState().getStatus() != GameState.STATUS_PLAYER1_WINS) {
+				System.out.print("");
+			}
 		}
 		System.out.println("Current H: " + this.game.getGameState().getHeuristicValue(GameState.H_MINIMAX));
 		//System.out.println("timeLeft: "+timeLeft);
@@ -683,32 +697,65 @@ public class ImageDrawingApplet extends JApplet {
 			String line = in.nextLine();
 			file.add(line);
 		}
-		in.close();		
+		in.close();
+		
+		boolean rowFormat = false;
 		
 		@SuppressWarnings("unchecked")
 		ArrayList<Integer>[] moves = new ArrayList[4]; 
 		for (int i = 0; i < moves.length; i++) {
 			moves[i] = new ArrayList<Integer>();
 		}
-		for (int row = 0; row < file.size(); row++) {
-			if (file.get(row).charAt(0) == 'X') {
-				continue;
-			}
-			StringTokenizer st = new StringTokenizer(file.get(row), ",");
-			while(st.hasMoreTokens()) {
-				String token = st.nextToken();
-				int action = 0;
-				switch (token.charAt(1)) {
-					case '^': 	action = GameAction.ACTION_MOVE_GUI_NORTH;	break;
-					case '>': 	action = GameAction.ACTION_MOVE_EAST;		break;
-					case 'v': 	action = GameAction.ACTION_MOVE_GUI_SOUTH;	break;
-					case '<': 	action = GameAction.ACTION_MOVE_WEST;		break;
-					case 'F': 	action = GameAction.ACTION_FIRE;			break;
-					case '.': 	action = GameAction.ACTION_NONE;			break;
-					default:	action = -1;
+		
+		if (rowFormat) {		
+			for (int row = 0; row < file.size(); row++) {
+				if (file.get(row).charAt(0) == 'X') {
+					continue;
 				}
-				int newAction = action;
-				moves[row].add(newAction);
+				StringTokenizer st = new StringTokenizer(file.get(row), ",");
+				while(st.hasMoreTokens()) {
+					String token = st.nextToken();
+					int action = 0;
+					switch (token.charAt(1)) {
+						case '^': 	action = GameAction.ACTION_MOVE_GUI_NORTH;	break;
+						case '>': 	action = GameAction.ACTION_MOVE_EAST;		break;
+						case 'v': 	action = GameAction.ACTION_MOVE_GUI_SOUTH;	break;
+						case '<': 	action = GameAction.ACTION_MOVE_WEST;		break;
+						case 'F': 	action = GameAction.ACTION_FIRE;			break;
+						case '.': 	action = GameAction.ACTION_NONE;			break;
+						default:	action = -1;
+					}
+					int newAction = action;
+					moves[row].add(newAction);
+				}
+			}
+		} else {
+			HashSet<Integer> skippedColumns = new HashSet<Integer>();
+			for (int row = 0; row < file.size(); row++) {
+				StringTokenizer st = new StringTokenizer(file.get(row), " ");
+				int column = 0;
+				while(st.hasMoreTokens()) {
+					String token = st.nextToken();
+					if (skippedColumns.contains(column)) {
+						column++;
+						continue;
+					}
+					int action = 0;
+					switch (token.charAt(0)) {
+						case '^': 	action = GameAction.ACTION_MOVE_GUI_NORTH;	break;
+						case '>': 	action = GameAction.ACTION_MOVE_EAST;		break;
+						case 'v': 	action = GameAction.ACTION_MOVE_GUI_SOUTH;	break;
+						case '<': 	action = GameAction.ACTION_MOVE_WEST;		break;
+						case 'F': 	action = GameAction.ACTION_FIRE;			break;
+						case '.': 	action = GameAction.ACTION_NONE;			break;
+						case 'X':
+							skippedColumns.add(column++);
+							continue;
+						default:	action = -1;
+					}
+					int newAction = action;
+					moves[column++].add(newAction);
+				}
 			}
 		}
 		return moves;

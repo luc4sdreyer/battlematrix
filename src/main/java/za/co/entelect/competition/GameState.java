@@ -51,6 +51,9 @@ public class GameState {
 	public static final int STAGE_P1_ENDGAME_T1 = 6;
 	public static final int STAGE_P2_ENDGAME_T1 = 7;
 	
+	public static final int RULES_NORMAL = 0;
+	public static final int RULES_TOTAL_DESTRUCTION = 1;
+	
 	public final static int tankSize = 5;
 	public final static int maxTurns = 500;
 	public final static int maxNumBlocks = 10000;
@@ -63,9 +66,12 @@ public class GameState {
 	private int tickCount = 0;
 	private int status = 0;
 	private int stage = 0;
+	private int rules = 0;
 	private boolean debugMode;
 	private boolean saveActions;
-	private ArrayList<GameState> actionLog;
+	private ArrayList<GameState> gameLog;
+	private ArrayList<int[]> actionLog;
+	
 	private long hashCode;
 	
 	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount) {
@@ -76,21 +82,34 @@ public class GameState {
 		this.tanks = tanks;
 		this.bases = bases;
 		this.tickCount = tickCount;
-		this.setStatusAndStage();
+		this.rules = RULES_NORMAL;
 		
+		this.init();		
+	}	
+	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount, int rules) {
+		super();
+		this.map = map;
+		this.bullets = bullets;
+		this.collisions = collisions;
+		this.tanks = tanks;
+		this.bases = bases;
+		this.tickCount = tickCount;
+		this.rules = rules;
+		
+		this.init();		
+	}
+	private void init() {		
 		this.debugMode = false; 
 		this.saveActions = false;
-		this.actionLog = new ArrayList<GameState>();
 		
+		this.setStatusAndStage();
 		if (this.map.length * this.map[0].length > maxNumBlocks) {
 			System.err.println("FATAL ERROR: Map is too large. Max size: " + GameState.maxNumBlocks);
-		}
-		
+		}		
 		//
 		// Generate the starting hashCode
 		//
 		this.hashCode = this.generateHash();
-		
 	}
 	public int[][] getMap() {
 		return map;
@@ -143,6 +162,12 @@ public class GameState {
 	}
 	public void setSaveActions(boolean saveActions) {
 		this.saveActions = saveActions;
+		if (this.getGameLog() == null) {
+			this.setGameLog(new ArrayList<GameState>());			
+		}
+		if (this.getActionLog() == null) {
+			this.setActionLog(new ArrayList<int[]>());			
+		}
 	}
 	public boolean isDebugMode() {
 		return debugMode;
@@ -151,11 +176,24 @@ public class GameState {
 		this.debugMode = debugMode;
 		this.setSaveActions(true);
 	}
-	public ArrayList<GameState> getActionLog() {
+	public ArrayList<GameState> getGameLog() {
+		return gameLog;
+	}
+	public void setGameLog(ArrayList<GameState> gameLog) {
+		this.gameLog = gameLog;
+	}
+	public ArrayList<int[]> getActionLog() {
 		return actionLog;
 	}
-	public void setActionLog(ArrayList<GameState> actionLog) {
+	public void setActionLog(ArrayList<int[]> actionLog) {
 		this.actionLog = actionLog;
+	}
+	public int getRules() {
+		return rules;
+	}
+	public void setRules(int rules) {
+		this.rules = rules;
+		this.setStatusAndStage();
 	}
 	public GameState clone() {
 		int[][] newMap = new int[this.map.length][this.map[0].length];
@@ -186,7 +224,7 @@ public class GameState {
 			newBases[i] = bases[i].clone();
 		}
 		
-		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount);
+		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount, this.rules);
 	}
 	public static GameState fromEGame(za.co.entelect.challenge.Game eGame, za.co.entelect.challenge.State[][] eStateGrid, 
 			HashMap<Integer, Integer> eBullets, String myName, int[] playerIdxHolder, GameState prevXGameState) {
@@ -471,7 +509,7 @@ public class GameState {
 		if (Unit.isTank(unitCode)) {
 			Tank me = (Tank) getUnit(unitCode);
 			ArrayList<Integer> actions = new ArrayList<Integer>();
-			
+
 			if (me.isAlive()) {
 				if (!this.bullets[unitCode - 2].isAlive()) {
 					actions.add(GameAction.ACTION_FIRE);
@@ -606,34 +644,55 @@ public class GameState {
 				numTank2++;
 			}
 			
-			//
-			// H levels:
-			// * 100k: 		Base existence
-			// * 80k - 40k:	Tank existence			
-			
-			//
-			// Subtract the current tickCount from the maximum to prevent procrastination. 
-			//
-			if (numBase1 != numBase2) {
-				h = 100000 * Math.abs(numBase1 - numBase2);
-				h += GameState.maxTurns - this.getTickCount();
-				if (numBase1 > numBase2) {
-					return h;
-				} else {
-					return -h;	
-				}				
-			}
-			
-			if (numTank1 != numTank2) {
-				if (numTank1 == 0 || numTank2 == 0) {
-					if (numTank1 == 0) {
-						h = -(numTank2 * 20000 + 40000);
-					} else {
-						h = (numTank1 * 20000 + 40000);
-					}
-				} else {
-					h = (numTank1 - numTank2) * 40000;
+			if (this.rules == GameState.RULES_NORMAL) {
+				//
+				// H levels:
+				// * 100k: 		Base existence
+				// * 80k - 40k:	Tank existence			
+				
+				//
+				// Subtract the current tickCount from the maximum to prevent procrastination. 
+				//
+				if (numBase1 != numBase2) {
+					h = 100000 * Math.abs(numBase1 - numBase2);
+					h += GameState.maxTurns - this.getTickCount();
 				}
+				
+				if (numTank1 != numTank2) {
+					if (numTank1 == 0 || numTank2 == 0) {
+						if (numTank1 == 0) {
+							h = -(numTank2 * 20000 + 40000);
+						} else {
+							h = (numTank1 * 20000 + 40000);
+						}
+					} else {
+						h = (numTank1 - numTank2) * 40000;
+					}
+				}
+				
+				if (numBase1 != numBase2) {
+					if (numBase1 > numBase2) {
+						return h;
+					} else {
+						return -h;	
+					}
+				}
+			} else if (this.rules == GameState.RULES_TOTAL_DESTRUCTION) {
+				int numUnits1 = numBase1 + numTank1;
+				int numUnits2 = numBase2 + numTank2;				
+				
+				if (numUnits1 != numUnits2) {
+					if (numUnits1 == 0 || numUnits2 == 0) {
+						if (numUnits1 == 0) {
+							h = -100000;
+						} else {
+							h = 100000;
+						}
+					} else {
+						h = (numUnits1 - numUnits2) * 30000;
+					}
+				}
+				h += GameState.maxTurns - this.getTickCount();
 			}
 			
 			//
@@ -846,13 +905,13 @@ public class GameState {
 	//TODO: 11. Assume Bullets will collide if they never share a space
 	//TODO: 12. Assume that the base will always be on the edge of the map.
 	//TODO: 13. In cases where Bullet collisions involve Tanks, the Tanks are always destroyed. This probably isn't correct but it is safe.
-	public void nextTick() {		
+	public void nextTick() {
 		//
 		// Optionally record old GameState
 		//
 		if (this.saveActions) {
-			this.actionLog.add(this.clone());
-		} 
+			this.gameLog.add(this.clone());
+		}
 		
 		this.tickCount++;
 
@@ -905,6 +964,17 @@ public class GameState {
 				System.err.println("TANK[" + i + "] has invalid action set, doing NONE");
 				t.setNextAction(GameAction.ACTION_NONE);
 			}
+		}
+		
+		//
+		// Optionally record moves
+		//
+		if (this.saveActions) {
+			int[] performedActions = new int[4];
+			for (int i = 0; i < 4; i++) {
+				performedActions[i] = getTanks()[i].getNextAction();
+			}
+			this.actionLog.add(performedActions);
 		}
 
 		//
@@ -1145,48 +1215,70 @@ public class GameState {
 		if (this.tanks[3].isAlive()) {
 			numTank2++;
 		}
-		
-		if (numBase1 != numBase2) {
-			if (numBase1 > numBase2) {
-				this.status = STATUS_PLAYER1_WINS;
-			} else {
-				this.status = STATUS_PLAYER2_WINS;
-			}
-		} else if (numBase1 == 0 && numBase2 == 0) {
-			this.status = STATUS_DRAW;
-		} else if (numTank1 == 0 && numTank2 == 0) {
-			this.status = STATUS_DRAW;
-		} else {
-			//
-			// Game is still active, split it into stages.
-			//
 
-			if (numTank1 == 2 && numTank2 == 2) {
-				this.stage = STAGE_EQUAL_T2;
-				
-			} else if (numTank1 == 1 && numTank2 == 1) {
-				this.stage = STAGE_EQUAL_T1;
-				
-			} else if (numTank1 == 2 && numTank2 == 1) {
-				this.stage = STAGE_P1_ADVANTAGE;
-				
-			} else if (numTank1 == 1 && numTank2 == 2) {
-				this.stage = STAGE_P2_ADVANTAGE;
-				
-			} else if (numTank1 == 2 && numTank2 == 0) {
-				this.stage = STAGE_P1_ENDGAME_T2;
-				
-			} else if (numTank1 == 1 && numTank2 == 0) {
-				this.stage = STAGE_P1_ENDGAME_T1;
-				
-			} else if (numTank1 == 0 && numTank2 == 2) {
-				this.stage = STAGE_P2_ENDGAME_T2;
-				
-			} else if (numTank1 == 0 && numTank2 == 1) {
-				this.stage = STAGE_P2_ENDGAME_T1;
-				
-			}		
-		}		
+		if (this.rules == RULES_NORMAL) {
+			if (numBase1 != numBase2) {
+				if (numBase1 > numBase2) {
+					this.status = STATUS_PLAYER1_WINS;
+				} else {
+					this.status = STATUS_PLAYER2_WINS;
+				}
+			} else if (numBase1 == 0 && numBase2 == 0) {
+				this.status = STATUS_DRAW;
+			} else if (numTank1 == 0 && numTank2 == 0) {
+				this.status = STATUS_DRAW;
+			} else {
+				//
+				// Game is still active, split it into stages.
+				//
+				this.status = STATUS_ACTIVE;
+	
+				if (numTank1 == 2 && numTank2 == 2) {
+					this.stage = STAGE_EQUAL_T2;
+					
+				} else if (numTank1 == 1 && numTank2 == 1) {
+					this.stage = STAGE_EQUAL_T1;
+					
+				} else if (numTank1 == 2 && numTank2 == 1) {
+					this.stage = STAGE_P1_ADVANTAGE;
+					
+				} else if (numTank1 == 1 && numTank2 == 2) {
+					this.stage = STAGE_P2_ADVANTAGE;
+					
+				} else if (numTank1 == 2 && numTank2 == 0) {
+					this.stage = STAGE_P1_ENDGAME_T2;
+					
+				} else if (numTank1 == 1 && numTank2 == 0) {
+					this.stage = STAGE_P1_ENDGAME_T1;
+					
+				} else if (numTank1 == 0 && numTank2 == 2) {
+					this.stage = STAGE_P2_ENDGAME_T2;
+					
+				} else if (numTank1 == 0 && numTank2 == 1) {
+					this.stage = STAGE_P2_ENDGAME_T1;
+					
+				}		
+			}
+		} else if (this.rules == RULES_TOTAL_DESTRUCTION) {
+			int numUnits1 = numBase1 + numTank1;
+			int numUnits2 = numBase2 + numTank2;
+			
+			if (numUnits1 != numUnits2) {
+				if (numUnits2 == 0) {
+					this.status = STATUS_PLAYER1_WINS;
+				} else if (numUnits1 == 0) {
+					this.status = STATUS_PLAYER2_WINS;
+				} else {
+					// Game is still active!
+					this.status = STATUS_ACTIVE;
+				}
+			} else if (numUnits1 == 0 && numUnits2 == 0) {
+				this.status = STATUS_DRAW;
+			} else {
+				// Game is still active!
+				this.status = STATUS_ACTIVE;
+			}
+		}
 	}
 	private void moveBullets(ArrayList<Point> deadListPoint, ArrayList<Point> bulletCollisionList) {
 		

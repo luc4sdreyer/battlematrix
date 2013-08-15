@@ -1,11 +1,16 @@
 package za.co.entelect.competition;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -13,15 +18,17 @@ import java.util.concurrent.Executors;
 
 public class Simulator implements Runnable {
 	public static final boolean dbMode = false;
+	public static final boolean saveGamesWhereP1Loses = false;
 	public static final int numThreads = 5;
 	public static Connection connection = null;
 	
 	private Game game;
 	private ArrayList<Integer>[] moveList;
 	private int timeLimit = 100;
-	private Result result;	
+	private Result result;
+	private int simID;
 
-	public Simulator(Result result, ArrayList<String> file, ArrayList<Integer>[] moveList, String bot1, String bot2) {
+	public Simulator(Result result, ArrayList<String> file, ArrayList<Integer>[] moveList, String bot1, String bot2, int simID) {
 		this.game = new Game(
 				bot1,
 				bot2,
@@ -35,8 +42,14 @@ public class Simulator implements Runnable {
 		this.game.getPlayer2().setDebugLevel(0);
 		this.moveList = moveList;
 		this.result = result;
+		this.simID = simID;
 		
 		this.game.getGameState().setDebugMode(true);
+		this.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
+		
+		if (saveGamesWhereP1Loses) {
+			this.game.getGameState().setDebugMode(true);
+		}
 	}
 
 	@Override
@@ -57,6 +70,25 @@ public class Simulator implements Runnable {
 		}
 
 		this.game.generateResult(this.result);
+		if (saveGamesWhereP1Loses) {
+			if (this.game.getGameState().getStatus() == GameState.STATUS_PLAYER2_WINS) {
+				BufferedWriter fileWriter = null;
+		        File currentMoveList = new File("movelists\\" + Util.date.format(Calendar.getInstance().getTime()) + "_" + this.simID + ".txt");
+		        try {
+					fileWriter = new BufferedWriter(new FileWriter(currentMoveList));
+			        for (int j = 0; j < this.game.getGameState().getActionLog().size(); j++) {
+						int[] actions = this.game.getGameState().getActionLog().get(j);
+						for (int i = 0; i < actions.length; i++) {
+							fileWriter.write(GameAction.toString(actions[i]));
+						}
+						fileWriter.write("\n");
+					}
+					fileWriter.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 
@@ -90,7 +122,7 @@ public class Simulator implements Runnable {
 				System.out.println("Failed to make connection!");
 			}
 		} else {
-			numSims = 1;
+			numSims = 3;
 		}
 
 
@@ -99,7 +131,7 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 1000;
+				numTests = 100000;
 			}
 			long time = System.nanoTime();
 			ExecutorService executor = Executors.newFixedThreadPool(numThreads);
@@ -114,14 +146,40 @@ public class Simulator implements Runnable {
 					mapString += str + "\n";
 				}
 			} else {
-				//gameFile = Game.readGameFromFile("map.txt");
+				gameFile = Game.readGameFromFile("map.txt");
 				
-				gameFile = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0).toStringList();
+//				int minWidth = 80;
+//				int maxWidth = 100;
+//				int minHeight = 80;
+//				int maxHeight = 100;
+//				int blockSize = 5;
+//				double percentageWall = 0.15;
+//				boolean basesOnSides = true;
+//				boolean mirrored = true;
+//				int numTanksP1 = 1;
+//				int numTanksP2 = 0;
+
+				int minWidth = 15;
+				int maxWidth = 25;
+				int minHeight = 15;
+				int maxHeight = 25;
+				int blockSize = 5;
+				double percentageWall = 0.0;
+				boolean basesOnSides = true;
+				boolean mirrored = false;
+				int numTanksP1 = 1;
+				int numTanksP2 = 1;
+				
+				GameState newGame = MapGenerator.generateRandom(minWidth, maxWidth, minHeight, maxHeight,
+						blockSize, percentageWall, basesOnSides, mirrored, numTanksP1, numTanksP2);
+				//System.out.println(newGame);
+				//gameFile = newGame.toStringList();
+				
 			}
 			ArrayList<Integer>[] moveList = null; //ImageDrawingApplet.loadMoveList();
 
 			String bot1 =
-					"za.co.entelect.competition.bots.Random"
+					"za.co.entelect.competition.bots.Brute"
 					//"za.co.entelect.competition.bots.Endgame"
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
@@ -141,7 +199,7 @@ public class Simulator implements Runnable {
 				results.add(nextResult);
 				Simulator sim = null;
 				//if (i < numTests/2) {
-				sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2);
+				sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2, i);
 				//} else {
 				//	sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1);
 				//}
@@ -153,8 +211,8 @@ public class Simulator implements Runnable {
 
 			HashMap<String, int[]> resultMap = new HashMap<String, int[]>();
 			int[] wld = null;
-			int numTicks = 0;
-			int numGames = results.size();
+			long numTicks = 0;
+			long numGames = results.size();
 			for (Result result : results) {
 				String name = result.score.name[0] + " vs " + result.score.name[1];
 				if (resultMap.containsKey(name)) {

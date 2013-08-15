@@ -261,6 +261,12 @@ public class Game {
 				}
 			}
 		}
+		for (int i = 0; i < bases.length; i++) {
+			if (bases[i] == null) {
+				bases[i] = new Base(new Point(0,0), 2, false);
+				continue;
+			}
+		}
 		GameState newGame = new GameState(map, bullets, tanks, bases, collisions, 0);
 		//System.out.println("New map:");
 		//System.out.println(newGame.toString());

@@ -1,6 +1,5 @@
 package za.co.entelect.competition.bots;
 
-import za.co.entelect.competition.GameAction;
 import za.co.entelect.competition.GameState;
 
 public abstract class Bot {

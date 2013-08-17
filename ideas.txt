@@ -147,5 +147,10 @@ BUT on an infinite plane, many positions are actually just copies of one another
 =================================================================================================================
 Current plan:
 
-1. Develop a Brute bot that can beat Random most of the time.
-	a.	1v1 & 2v2 small map
+1. Develop a Brute bot that can beat Random most (90%+) of the time.
+	a.	1v1 & 2v2 small map														DONE!
+	b.	1v1, 2v1, 1v2, 2v2, swapped starting positions on E0 map				DONE!
+	
+2. Develop a "smart" bot that can beat Brute most (90%+) of the time, and Random almost all of the time (99%+).
+	a.	1v1 & 2v2 small map														
+	b.	1v1, 2v1, 1v2, 2v2, swapped starting positions on E0 map				

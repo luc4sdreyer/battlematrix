@@ -54,6 +54,9 @@ public class GameState {
 	public static final int RULES_NORMAL = 0;
 	public static final int RULES_TOTAL_DESTRUCTION = 1;
 	
+	public static final int MAP_TYPE_UNKNOWN = 0;
+	public static final int MAP_TYPE_E0 = 1;
+	
 	public final static int tankSize = 5;
 	public final static int maxTurns = 500;
 	public final static int maxNumBlocks = 10000;
@@ -67,6 +70,7 @@ public class GameState {
 	private int status = 0;
 	private int stage = 0;
 	private int rules = 0;
+	private int mapType = 0;
 	private boolean debugMode;
 	private boolean saveActions;
 	private ArrayList<GameState> gameLog;
@@ -83,10 +87,12 @@ public class GameState {
 		this.bases = bases;
 		this.tickCount = tickCount;
 		this.rules = RULES_NORMAL;
+		this.mapType = MAP_TYPE_UNKNOWN;
 		
 		this.init();		
 	}	
-	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount, int rules) {
+	public GameState(int[][] map, Bullet[] bullets, Tank[] tanks, Base[] bases, ArrayList<Collision> collisions, int tickCount,
+			int rules, int mapType) {
 		super();
 		this.map = map;
 		this.bullets = bullets;
@@ -95,6 +101,7 @@ public class GameState {
 		this.bases = bases;
 		this.tickCount = tickCount;
 		this.rules = rules;
+		this.mapType = mapType;
 		
 		this.init();		
 	}
@@ -195,36 +202,72 @@ public class GameState {
 		this.rules = rules;
 		this.setStatusAndStage();
 	}
+	public int getMapType() {
+		return mapType;
+	}
+	public void setMapType(int mapType) {
+		this.mapType = mapType;
+	}
+	private final static boolean fastClone = true;
 	public GameState clone() {
-		int[][] newMap = new int[this.map.length][this.map[0].length];
-		for (int y = 0; y < newMap.length; y++) {
-			//newMap[y] = Arrays.copyOf(this.map[y], this.map[0].length);
-			for (int x = 0; x < newMap[0].length; x++) {
-				newMap[y][x] = this.map[y][x];
+		if (!fastClone) {
+			int[][] newMap = new int[this.map.length][this.map[0].length];
+			for (int y = 0; y < newMap.length; y++) {
+				for (int x = 0; x < newMap[0].length; x++) {
+					newMap[y][x] = this.map[y][x];
+				}
 			}
+			
+			Bullet[] newBullets = new Bullet[this.bullets.length];
+			for (int i = 0; i < this.bullets.length; i++) {
+				newBullets[i] = bullets[i].clone();
+			}
+			
+			ArrayList<Collision> newCollisions = new ArrayList<Collision>();
+			for (Collision collision : this.collisions) {
+				newCollisions.add(collision.clone());
+			}
+			
+			Tank[] newTanks = new Tank[this.tanks.length];
+			for (int i = 0; i < this.tanks.length; i++) {
+				newTanks[i] = tanks[i].clone();
+			}
+			
+			Base[] newBases = new Base[this.bases.length];
+			for (int i = 0; i < this.bases.length; i++) {
+				newBases[i] = bases[i].clone();
+			}
+			
+			return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount, this.rules, this.mapType);
+		} else {
+			final int mLength = this.map.length;
+			int[][] newMap = new int[mLength][];
+			for (int y = 0; y < mLength; y++) {
+				newMap[y] = map[y].clone();
+			}
+			
+			Bullet[] newBullets = new Bullet[this.bullets.length];
+			for (int i = 0; i < this.bullets.length; i++) {
+				newBullets[i] = bullets[i].clone();
+			}
+			
+			ArrayList<Collision> newCollisions = new ArrayList<Collision>();
+			for (Collision collision : this.collisions) {
+				newCollisions.add(collision.clone());
+			}
+			
+			Tank[] newTanks = new Tank[this.tanks.length];
+			for (int i = 0; i < this.tanks.length; i++) {
+				newTanks[i] = tanks[i].clone();
+			}
+			
+			Base[] newBases = new Base[this.bases.length];
+			for (int i = 0; i < this.bases.length; i++) {
+				newBases[i] = bases[i].clone();
+			}
+			
+			return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount, this.rules, this.mapType);
 		}
-		
-		Bullet[] newBullets = new Bullet[this.bullets.length];
-		for (int i = 0; i < this.bullets.length; i++) {
-			newBullets[i] = bullets[i].clone();
-		}
-		
-		ArrayList<Collision> newCollisions = new ArrayList<Collision>();
-		for (Collision collision : this.collisions) {
-			newCollisions.add(collision.clone());
-		}
-		
-		Tank[] newTanks = new Tank[this.tanks.length];
-		for (int i = 0; i < this.tanks.length; i++) {
-			newTanks[i] = tanks[i].clone();
-		}
-		
-		Base[] newBases = new Base[this.bases.length];
-		for (int i = 0; i < this.bases.length; i++) {
-			newBases[i] = bases[i].clone();
-		}
-		
-		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount, this.rules);
 	}
 	public static GameState fromEGame(za.co.entelect.challenge.Game eGame, za.co.entelect.challenge.State[][] eStateGrid, 
 			HashMap<Integer, Integer> eBullets, String myName, int[] playerIdxHolder, GameState prevXGameState) {
@@ -1568,6 +1611,53 @@ public class GameState {
 	
 	public long hashCodeLong() {
 		return hashCode;
+	}
+	
+	public void setMapType() {
+		this.mapType = GameState.identifyMapType(this.map);
+		if (this.debugMode) {
+			System.out.println("MapType set to type " + this.mapType);
+		} 
+	}
+	
+	public static int identifyMapType(int[][] unknownMap) {
+		String[] maps = {
+			"mapE1.txt",
+		};
+		
+		int[] mapTypes = {
+			GameState.MAP_TYPE_E0,
+		};
+		
+		for (int i = 0; i < maps.length; i++) {
+			GameState gameState = Game.newGame(maps[i]);
+			int[][] map = gameState.getMap();			
+
+			int numEmptyOrWall = 0;
+			for (int y = 0; y < map.length; y++) {
+				for (int x = 0; x < map[0].length; x++) {
+					if (Unit.isEmptyOrWall(map[y][x])) {
+						numEmptyOrWall++;
+					}
+				}
+			}
+
+			int numEqual = 0;
+			for (int y = 0; y < unknownMap.length; y++) {
+				for (int x = 0; x < unknownMap[0].length; x++) {
+					if (gameState.isInMap(new Point(x,y))) {
+						if (Unit.isEmptyOrWall(map[y][x]) && map[y][x] == unknownMap[y][x]) {
+							numEqual++;
+						}
+					}
+				}
+			}
+			
+			if (numEqual > 0.9 * (numEmptyOrWall)) {
+				return mapTypes[i];
+			}				
+		}
+		return GameState.MAP_TYPE_UNKNOWN;
 	}
 	
 }

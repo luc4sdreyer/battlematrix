@@ -470,19 +470,22 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Minimax",
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
-							"za.co.entelect.competition.bots.Brute",	
 							//"za.co.entelect.competition.bots.Endgame",
-							"za.co.entelect.competition.bots.Random",			
+							"za.co.entelect.competition.bots.Random",		
+							"za.co.entelect.competition.bots.Brute",
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
-							"map.txt",
+							//"map.txt",
+							"mapE1_7.txt",
 							//gameState,
 							//gameList,
 							false);
-		mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
+//		mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
 //		gameState.getTanks()[3].setAlive(false);
+		mainGUI.game.getGameState().setDebugMode(true);
+		mainGUI.game.getGameState().setMapType();
 
 		mainGUI.id.preferredSize = new Point(mainGUI.game.getGameState().getMap()[0].length, mainGUI.game.getGameState().getMap().length);
 		f.pack();

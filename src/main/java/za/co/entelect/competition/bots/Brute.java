@@ -21,19 +21,24 @@ import za.co.entelect.competition.PathFind.PointS;
  * 
  */
 
-public class Brute extends Bot {
+public class Brute extends Bot {	
 	
 	private ArrayList<PointS> path;
 	private boolean active = true;
+	private boolean initialized = false;
 	
 	//
 	// Anticipate that enemy tanks might fire (if they can) from their current position.
 	// Mark this in the bulletGrid accordingly.
 	//
 	private boolean considerPotentialEnemyBullets = true;
+	private boolean swapMyTanks = false;
+	private boolean swapEnemyTanks = false;
+	private boolean attackBaseSooner = true;
 	
 	private static final boolean printGoalArea = false;
-	private static final boolean  printBulletGrid = false;
+	private static final boolean printBulletGrid = false;
+	private static final boolean printExtraOutput = false;
 
 	public Brute(int playerIndex) {
 		super(playerIndex);
@@ -41,269 +46,391 @@ public class Brute extends Bot {
 
 	@Override
 	public int[] getActions(GameState originalGameState, int timeLimitMS) {
+		if (!initialized) {
+			this.init(originalGameState);
+		}
 		GameState gameState = originalGameState.clone();
 		int[] gameActions = new int[2];
 		Arrays.fill(gameActions, -1);
 		path = null;
-		int meIdx = 2 * getPlayerIndex();
+		//int tankIdx = 2 * getPlayerIndex();
+		//int myT2Idx = 2 * getPlayerIndex() + 1;
 		int enemyIndex = (getPlayerIndex() + 1) % 2;
 		HashSet<Point> goalArea = new HashSet<Point>();
-		Tank me = gameState.getTanks()[meIdx];
+		//Tank myT2 = gameState.getTanks()[myT2Idx];
+		int[][] map = gameState.getMap();
 		
-		// TODO: Working only for one tank at the moment
-		if (!me.isAlive()) {
+		if (!gameState.getTanks()[2 * getPlayerIndex()].isAlive() && !gameState.getTanks()[2 * getPlayerIndex() + 1].isAlive()) {
 			gameActions = Random.getActionsStatic();
 		} else if (!gameState.isActive() || !active) {
 			gameActions = Random.getActionsStatic();
 			System.out.println("\tBrute using RANDOM move instead.");
 		} else {
 			
-			Point target = null;
-			int targetRadius = -1000000000;
-			if (gameState.getTanks()[2 * enemyIndex].isAlive()) {
-				target = new Point(gameState.getTanks()[2 * enemyIndex].getPosition());
-				target.translate(2, 2);
-				targetRadius = 2;
-			} else if (gameState.getTanks()[2 * enemyIndex + 1].isAlive()) {
-				target = new Point(gameState.getTanks()[2 * enemyIndex + 1].getPosition());
-				target.translate(2, 2);
-				targetRadius = 2;
-			} else {
-				target = gameState.getBases()[enemyIndex].getPosition();
-				targetRadius = 0;
-			}
-
-			int[] ticksUntilBulletHit = new int[1];
-			ticksUntilBulletHit[0] = GameState.maxNumBlocks;
-			if (path == null) {
-				path = null;
-
-				//
-				// Convert map to grid. 
-				//
-				int[][] map = gameState.getMap();
-				boolean[][] grid = new boolean[map.length][map[0].length];
-				for (int y = 0; y < grid.length; y++) {
-					for (int x = 0; x < grid[0].length; x++) {
-						if (map[y][x] == Unit.WALL || Unit.isBase(map[y][x])) {
-							grid[y][x] = true;
-						} else {
-							grid[y][x] = false;
+			// 
+			// Arbitrary target assignment
+			//
+			for (int tankIdx = 2 * getPlayerIndex(); tankIdx < 2 * (getPlayerIndex()+1); tankIdx++) {
+				Tank me = gameState.getTanks()[tankIdx];
+				int gameActionIdx = tankIdx - 2 * getPlayerIndex();
+				
+				if (!me.isAlive()) {
+					continue;
+				}
+				
+				Point target = null;
+				int targetRadius = -1000000000;
+				int maxDistanceFromTarget = 1000000000;
+				if ((!swapMyTanks && tankIdx % 2 == 0) || (swapMyTanks && tankIdx % 2 == 1)) {
+					if (gameState.getMapType() == GameState.MAP_TYPE_E0) {
+						if (map[40][15] == Unit.WALL) {
+							target = new Point(15,40);
+							targetRadius = 0;
 						}
 					}
-				}
-				
-				//
-				// Generate Bullet grid for basic Bullet avoidance
-				//
-				int[][] bulletGrid = getBulletGrid(gameState, meIdx, enemyIndex);
-				
-				// TODO: Assume that base units won't be in the absolute corner and on the edge.
-				//
-				// Generate start and goal nodes
-				//
-				int numWallsAllowed = 0;
-				Point startPoint = new Point();
-				PointS start = null;
-				path = new ArrayList<PointS>();
-				
-				// TODO: Here you can optimize by looking at all the paths, and then choosing the best one.
-				//while(path.isEmpty() && numWallsAllowed < Math.max(map.length, map[0].length)) {
-				// TODO: Ignoring walls over here!
-				goalArea = getGoalArea(gameState, map, startPoint, target, numWallsAllowed, targetRadius);
-				int[] totalNodesVisited = new int[1];
-				start = new PointS(startPoint.x, startPoint.y, 0, 'X');
-				path = PathFind.BFSFinder(start, goalArea, target, grid, totalNodesVisited, gameState,
-						PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit);
-				
-				numWallsAllowed++;
-				//}
-				
-				if (path.isEmpty() && !goalArea.contains(start.p)) {
-					//System.err.println("Could not find a path");
-					//active = false;
-					return Random.getActionsStatic();
-				}
-				
-				path.add(0, start);
-			}
-			
-			boolean shouldFire = false;
-			//if (ticksUntilBulletHit[0] == 0) {
-				//
-				// Bullet impact is unavoidable. Might as well try to hit it or anything else 
-				//
-				
-			//if (ticksUntilBulletHit[0] > 0 && !gameState.getBullets()[meIdx].isAlive()) {
-			if (!gameState.getBullets()[meIdx].isAlive()) {
-				//
-				// If the first thing you hit is an enemy base or tank or bullet coming at you,
-				// you might as well try.
-				// Wall shots are not considered.
-				//
-				Tank t = gameState.getTanks()[meIdx];
-
-				Point bulletPosition = new Point(t.getPosition().x + GameState.tankSize/2, t.getPosition().y + GameState.tankSize/2);
-				bulletPosition = Util.movePoint(bulletPosition, t.getRotation());
-				bulletPosition = Util.movePoint(bulletPosition, t.getRotation());
-				//Move only twice because if there is something right in front of me it should be checked too
-				//bulletPosition = Util.movePoint(bulletPosition, t.getRotation());
-			
-				//if (i == 2 && bullets[i].getPosition().y == 7 && (bullets[i].getRotation() % 2 == 1)) {
-				int score = 0;
-				int walls = 0;
-				int empty = 0;
-				Point start = new Point(bulletPosition);
-				Point end = Util.movePointDist(bulletPosition, t.getRotation(), 1000, gameState);
-				while(!start.equals(end)) {
-					if (start.x > end.x) {
-						start.x--;
-					} else if (start.x < end.x) {
-						start.x++;
-					} else if (start.y > end.y) {
-						start.y--;
-					} else {
-						start.y++;
-					}
-					if (gameState.getMap()[start.y][start.x] == Unit.EMPTY) {
-						empty++;
-					} else if (gameState.getMap()[start.y][start.x] == Unit.WALL) {
-						//walls++;
-						break;
-					} else {
-						if (Unit.isBase(gameState.getMap()[start.y][start.x])) {
-							if (Unit.BASE1 + getPlayerIndex() == gameState.getMap()[start.y][start.x]) {
-								if (walls == 0) {
-									//
-									// Firing at own base!
-									//
-									score = -(10000 - empty);
-								}
-							} else {
-								score = 10000 - walls*10 - empty;
-							}
-							break;
-						} else if (Unit.isTank(gameState.getMap()[start.y][start.x])) {
-							boolean friendlyFire = false;
-							if (getPlayerIndex() == 0) {
-								if ((Unit.TANK1A == gameState.getMap()[start.y][start.x] 
-										|| Unit.TANK1B == gameState.getMap()[start.y][start.x]) 
-										&& walls == 0) {
-									friendlyFire = true;
-								}
-							} else {
-								if ((Unit.TANK2A == gameState.getMap()[start.y][start.x] 
-										|| Unit.TANK2B == gameState.getMap()[start.y][start.x]) 
-										&& walls == 0) {
-									friendlyFire = true;
-								}
-							}
-							if (friendlyFire) {
-								//
-								// Firing at own tank!
-								//
-								score = -(1000 - empty);
-							} else {
-								score = 1000 - walls*10 - empty;
-							}
-							break;
-						} else if (Unit.isBullet(gameState.getMap()[start.y][start.x])) {
-							Bullet foreignBullet = (Bullet) gameState.getUnit(gameState.getMap()[start.y][start.x]);
-													
-							//if (i == 2 && bullets[i].getPosition().y == 7 && (bullets[i].getRotation() % 2 == 1)) {
-							Point foreignBulletStart = new Point(foreignBullet.getPosition());
-							Point foreignBulletEnd = Util.movePointDist(foreignBulletStart, foreignBullet.getRotation(), 1000, gameState);
-
-							while(!foreignBulletStart.equals(foreignBulletEnd)) {
-								if (foreignBulletStart.x > foreignBulletEnd.x) {
-									foreignBulletStart.x--;
-								} else if (foreignBulletStart.x < foreignBulletEnd.x) {
-									foreignBulletStart.x++;
-								} else if (foreignBulletStart.y > foreignBulletEnd.y) {
-									foreignBulletStart.y--;
-								} else {
-									foreignBulletStart.y++;
-								}
-								
-								if (foreignBulletStart.equals(bulletPosition)) {
-									shouldFire = true;
-									break;
-								} else if (gameState.getMap()[foreignBulletStart.y][foreignBulletStart.x] == Unit.EMPTY) {
-									empty++;
-								} else {
-									break;
-								}
-							}
-							if (shouldFire) {
-								break;
-							}
-						}
-					}
-				}
-				if (getPlayerIndex() == 0) {
-					if (score > 0) {
-						shouldFire = true;
-					}
-				} else {
-					if (score < 0) {
-						shouldFire = true;
-					}
-				}
-			}
-			
-			if (shouldFire) {
-				gameActions[0] = GameAction.ACTION_FIRE;
-			} else {				
-				Point tankCenter = new Point(me.getPosition());
-				tankCenter.translate(2, 2);
-				//System.out.println("tankCenter: "+tankCenter);
-				if (path.size() <= 1) {				
-					//
-					// We should be on the goal area now.
-					//
-					//if ((tankCenter.x == target.x) || (tankCenter.y == target.y)) {
-					if (goalArea.contains(tankCenter)) {
-						int direction = Util.getDirectionUnbounded(tankCenter, target);
-						//
-						// If there is already a bullet fired rather just move closer to the target.
-						//
-						if (me.getRotation() == direction && !gameState.getBullets()[meIdx].isAlive()) {						
-							gameActions[0] = GameAction.ACTION_FIRE;
-						} else {
-							if (me.getRotation() == direction) {
-								//
-								// This leads to a small improvement because it prevents the tank from being too close.
-								//
-								gameActions[0] = GameAction.ACTION_NONE;
-							} else {
-								gameActions[0] = direction;
-							}
-						}
-					} else {
-						System.out.println("FATAL ERROR: Not on the target area!");
-					}
-				} else {
-					if (!tankCenter.equals(path.get(0).getP())) {
-						System.out.println("FATAL ERROR: position does not match path!");
+					
+					int targetEnemyTankPrimary = 2 * enemyIndex;
+					int targetEnemyTankSecondary = 2 * enemyIndex + 1;
+					
+					if (this.swapEnemyTanks) {
+						int temp = targetEnemyTankPrimary;
+						targetEnemyTankPrimary = targetEnemyTankSecondary;
+						targetEnemyTankSecondary = temp;
 					} 
-					int direction = Util.getDirection(path.get(0).getP(), path.get(1).getP());
 					
-					gameActions[0] = direction;
+					if (target == null && gameState.getTanks()[targetEnemyTankPrimary].isAlive()) {
+						target = new Point(gameState.getTanks()[targetEnemyTankPrimary].getPosition());
+						target.translate(2, 2);
+						targetRadius = 2;
+					}
 					
-					//if (me.getRotation() == direction) {
+					if (!attackBaseSooner) {
+						if (target == null && gameState.getTanks()[targetEnemyTankSecondary].isAlive()) {
+							target = new Point(gameState.getTanks()[targetEnemyTankSecondary].getPosition());
+							target.translate(2, 2);
+							targetRadius = 2;
+						}
+					}
+					
+					if (target == null) {
+						target = gameState.getBases()[enemyIndex].getPosition();
+						targetRadius = 0;
+					}
+				} else {
+					if (gameState.getMapType() == GameState.MAP_TYPE_E0) {
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								if (map[y][56] == Unit.WALL) {
+									target = new Point(56, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][56] == Unit.WALL) {
+									target = new Point(56, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					}
+					
+					int targetEnemyTankPrimary = 2 * enemyIndex + 1;
+					int targetEnemyTankSecondary = 2 * enemyIndex;
+					
+					if (this.swapEnemyTanks) {
+						int temp = targetEnemyTankPrimary;
+						targetEnemyTankPrimary = targetEnemyTankSecondary;
+						targetEnemyTankSecondary = temp;
+					} 
+					
+					if (target == null && gameState.getTanks()[targetEnemyTankPrimary].isAlive()) {
+						target = new Point(gameState.getTanks()[targetEnemyTankPrimary].getPosition());
+						target.translate(2, 2);
+						targetRadius = 2;
+					}
+
+					if (!attackBaseSooner) {
+						if (target == null && gameState.getTanks()[targetEnemyTankSecondary].isAlive()) {
+							target = new Point(gameState.getTanks()[targetEnemyTankSecondary].getPosition());
+							target.translate(2, 2);
+							targetRadius = 2;
+						}
+					}
+					
+					if (target == null) {
+						target = gameState.getBases()[enemyIndex].getPosition();
+						targetRadius = 0;
+					}
+				}
+	
+				int[] ticksUntilBulletHit = new int[1];
+				ticksUntilBulletHit[0] = GameState.maxNumBlocks;				
+				
+				path = null;
+				if (path == null) {
+	
 					//
-					// This will be an actual move, not a rotation
+					// Convert map to grid. 
 					//
-					path.remove(0);
-					//System.out.println("tank should move now");
-					//}
+					boolean[][] grid = getBasicGrid(map);
+					
+					//
+					// Generate Bullet grid for basic Bullet avoidance
+					//
+					int[][] bulletGrid = getBulletGrid(gameState, tankIdx, enemyIndex);
+					
+					// TODO: Assume that base units won't be in the absolute corner and on the edge.
+					//
+					// Generate start and goal nodes
+					//
+					int numWallsAllowed = 0;
+					Point startPoint = new Point();
+					PointS start = null;
+					path = new ArrayList<PointS>();
+					int[] unexploredSpace = new int[1]; 
+					unexploredSpace[0] = 1;
+					
+					// TODO: Here you can optimize by looking at all the paths, and then choosing the best one.
+					//while(path.isEmpty() && numWallsAllowed < Math.max(map.length, map[0].length)) {
+					while(path.isEmpty() && unexploredSpace[0] > 0) {
+						unexploredSpace[0] = 0;
+						goalArea = getGoalArea(gameState, map, startPoint, target, numWallsAllowed, targetRadius,
+								tankIdx, unexploredSpace, maxDistanceFromTarget);
+						int[] totalNodesVisited = new int[1];
+						start = new PointS(startPoint.x, startPoint.y, 0, 'X');
+						path = PathFind.BFSFinder(start, goalArea, target, grid, totalNodesVisited, gameState,
+								PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit);
+						
+						numWallsAllowed++;
+					}
+					
+					if (path.isEmpty() && !goalArea.contains(start.p)) {
+						if (printExtraOutput) {
+							System.err.println("Could not find a path");
+						}
+						//active = false;
+						gameActions[gameActionIdx] = Random.getActionsStatic()[gameActionIdx];
+						continue;
+					}
+					
+					path.add(0, start);
+				}
+				
+				boolean shouldFire = false;
+				//if (ticksUntilBulletHit[0] == 0) {
+					//
+					// Bullet impact is unavoidable. Might as well try to hit it or anything else 
+					//
+					
+				//if (ticksUntilBulletHit[0] > 0 && !gameState.getBullets()[meIdx].isAlive()) {
+				if (!gameState.getBullets()[tankIdx].isAlive()) {
+					//
+					// If the first thing you hit is an enemy base or tank or bullet coming at you,
+					// you might as well try.
+					// Wall shots are not considered.
+					//
+					Tank t = gameState.getTanks()[tankIdx];
+	
+					Point bulletPosition = new Point(t.getPosition().x + GameState.tankSize/2, t.getPosition().y + GameState.tankSize/2);
+					bulletPosition = Util.movePoint(bulletPosition, t.getRotation());
+					bulletPosition = Util.movePoint(bulletPosition, t.getRotation());
+					//Move only twice because if there is something right in front of me it should be checked too
+					//bulletPosition = Util.movePoint(bulletPosition, t.getRotation());
+				
+					//if (i == 2 && bullets[i].getPosition().y == 7 && (bullets[i].getRotation() % 2 == 1)) {
+					int score = 0;
+					int walls = 0;
+					int empty = 0;
+					Point start = new Point(bulletPosition);
+					Point end = Util.movePointDist(bulletPosition, t.getRotation(), 1000, gameState);
+					while(!start.equals(end)) {
+						if (start.x > end.x) {
+							start.x--;
+						} else if (start.x < end.x) {
+							start.x++;
+						} else if (start.y > end.y) {
+							start.y--;
+						} else {
+							start.y++;
+						}
+						if (gameState.getMap()[start.y][start.x] == Unit.EMPTY) {
+							empty++;
+						} else if (gameState.getMap()[start.y][start.x] == Unit.WALL) {
+							//walls++;
+							break;
+						} else {
+							if (Unit.isBase(gameState.getMap()[start.y][start.x])) {
+								if (Unit.BASE1 + getPlayerIndex() == gameState.getMap()[start.y][start.x]) {
+									if (walls == 0) {
+										//
+										// Firing at own base!
+										//
+										score = -(10000 - empty);
+									}
+								} else {
+									score = 10000 - walls*10 - empty;
+								}
+								break;
+							} else if (Unit.isTank(gameState.getMap()[start.y][start.x])) {
+								boolean friendlyFire = false;
+								if (getPlayerIndex() == 0) {
+									if ((Unit.TANK1A == gameState.getMap()[start.y][start.x] 
+											|| Unit.TANK1B == gameState.getMap()[start.y][start.x]) 
+											&& walls == 0) {
+										friendlyFire = true;
+									}
+								} else {
+									if ((Unit.TANK2A == gameState.getMap()[start.y][start.x] 
+											|| Unit.TANK2B == gameState.getMap()[start.y][start.x]) 
+											&& walls == 0) {
+										friendlyFire = true;
+									}
+								}
+								if (friendlyFire) {
+									//
+									// Firing at own tank!
+									//
+									score = -(1000 - empty);
+								} else {
+									score = 1000 - walls*10 - empty;
+								}
+								break;
+							} else if (Unit.isBullet(gameState.getMap()[start.y][start.x])) {
+								Bullet foreignBullet = (Bullet) gameState.getUnit(gameState.getMap()[start.y][start.x]);
+														
+								//if (i == 2 && bullets[i].getPosition().y == 7 && (bullets[i].getRotation() % 2 == 1)) {
+								Point foreignBulletStart = new Point(foreignBullet.getPosition());
+								Point foreignBulletEnd = Util.movePointDist(foreignBulletStart, foreignBullet.getRotation(), 1000, gameState);
+	
+								while(!foreignBulletStart.equals(foreignBulletEnd)) {
+									if (foreignBulletStart.x > foreignBulletEnd.x) {
+										foreignBulletStart.x--;
+									} else if (foreignBulletStart.x < foreignBulletEnd.x) {
+										foreignBulletStart.x++;
+									} else if (foreignBulletStart.y > foreignBulletEnd.y) {
+										foreignBulletStart.y--;
+									} else {
+										foreignBulletStart.y++;
+									}
+									
+									if (foreignBulletStart.equals(bulletPosition)) {
+										shouldFire = true;
+										break;
+									} else if (gameState.getMap()[foreignBulletStart.y][foreignBulletStart.x] == Unit.EMPTY) {
+										empty++;
+									} else {
+										break;
+									}
+								}
+								if (shouldFire) {
+									break;
+								}
+							}
+						}
+					}
+					if (getPlayerIndex() == 0) {
+						if (score > 0) {
+							shouldFire = true;
+						}
+					} else {
+						if (score < 0) {
+							shouldFire = true;
+						}
+					}
+				}
+				
+				if (shouldFire) {
+					gameActions[gameActionIdx] = GameAction.ACTION_FIRE;
+				} else {				
+					Point tankCenter = new Point(me.getPosition());
+					tankCenter.translate(2, 2);
+					//System.out.println("tankCenter: "+tankCenter);
+					if (path.size() <= 1) {				
+						//
+						// We should be on the goal area now.
+						//
+						//if ((tankCenter.x == target.x) || (tankCenter.y == target.y)) {
+						if (goalArea.contains(tankCenter)) {
+							int direction = Util.getDirectionUnbounded(tankCenter, target);
+							//
+							// If there is already a bullet fired rather just move closer to the target.
+							//
+							if (me.getRotation() == direction && !gameState.getBullets()[tankIdx].isAlive()) {						
+								gameActions[gameActionIdx] = GameAction.ACTION_FIRE;
+							} else {
+								if (me.getRotation() == direction) {
+									//
+									// This leads to a small improvement because it prevents the tank from being too close.
+									//
+									gameActions[gameActionIdx] = GameAction.ACTION_NONE;
+								} else {
+									gameActions[gameActionIdx] = direction;
+								}
+							}
+						} else {
+							System.out.println("FATAL ERROR: Not on the target area!");
+						}
+					} else {
+						if (!tankCenter.equals(path.get(0).getP())) {
+							System.out.println("FATAL ERROR: position does not match path!");
+						} 
+						int direction = Util.getDirection(path.get(0).getP(), path.get(1).getP());
+						
+						gameActions[gameActionIdx] = direction;
+						
+						//if (me.getRotation() == direction) {
+						//
+						// This will be an actual move, not a rotation
+						//
+						path.remove(0);
+						//System.out.println("tank should move now");
+						//}
+					}
 				}
 			}
 		}
-		gameActions[1] = GameAction.ACTION_NONE;
+		if (printExtraOutput) {
+			System.out.println("\t\tBrute actions: "+GameAction.toString(gameActions[0])+" "+GameAction.toString(gameActions[1]));
+		}
 		return gameActions;
 	}
 
+
+	private void init(GameState originalGameState) {
+		this.initialized = true;
+		
+		if (originalGameState.getMapType() == GameState.MAP_TYPE_E0) {
+			Tank myEastTank = originalGameState.getTanks()[2 * getPlayerIndex() + 1];
+			if (myEastTank.isAlive() && myEastTank.getPosition().x < originalGameState.getMap()[0].length/2) {
+				this.swapMyTanks = true;
+			}
+			
+			int enemyIndex = (getPlayerIndex() + 1) % 2;
+			Tank enemyEastTank = originalGameState.getTanks()[2 * enemyIndex + 1];
+			if (enemyEastTank.isAlive() && enemyEastTank.getPosition().x < originalGameState.getMap()[0].length/2) {
+				this.swapEnemyTanks = true;
+			}
+		}
+	}
+
+	private boolean[][] getBasicGrid(int[][] map) {
+		boolean[][] grid = new boolean[map.length][map[0].length];
+		for (int y = 0; y < grid.length; y++) {
+			for (int x = 0; x < grid[0].length; x++) {
+				if (map[y][x] == Unit.WALL || Unit.isBase(map[y][x])) {
+					grid[y][x] = true;
+				} else {
+					grid[y][x] = false;
+				}
+			}
+		}
+		return grid;
+	}
 
 	private int[][] getBulletGrid(GameState originalState, int meIdx, int enemyIndex) {
 		GameState gameState = originalState.clone();
@@ -456,14 +583,11 @@ public class Brute extends Bot {
 		return bulletGrid;
 	}
 
-	private HashSet<Point> getGoalArea(GameState gameState, int[][] map, Point start, Point target, int numWallsAllowed, int targetRadius) {
-		for (int i = getPlayerIndex()*2; i < (getPlayerIndex()+1)*2; i++) {
-			if (gameState.getTanks()[i].isAlive()) {
-				start.setLocation(	gameState.getTanks()[i].getPosition().x + 2, 
-									gameState.getTanks()[i].getPosition().y + 2);
-				break;
-			}
-		}
+	private HashSet<Point> getGoalArea(GameState gameState, int[][] map, Point start, Point target,
+			int numWallsAllowed, int targetRadius, int tankIdx, int[] unexploredSpace, int maxDistanceFromTarget) {
+
+		start.setLocation(	gameState.getTanks()[tankIdx].getPosition().x + 2, 
+							gameState.getTanks()[tankIdx].getPosition().y + 2);
 		
 		
 		HashSet<Point> goalArea = new HashSet<Point>();
@@ -529,6 +653,7 @@ public class Brute extends Bot {
 //			}
 //		} else 
 		int wideGoalArea = 0;
+		int startLoop = 0;
 		if ((target.y == 0 || target.y == map.length - 1) && (target.x == 0 || target.x == map[0].length - 1)) {
 			System.err.println("FATAL ERROR: Base may not be in the absolute corner!");
 		} else {
@@ -537,10 +662,12 @@ public class Brute extends Bot {
 				
 				if (gameState.isInMap(new Point(x + r, 0))) {
 					numWalls = 0;
-					for (int y = target.y + (3 + targetRadius); y < map.length; y++) {
+					startLoop = target.y + (3 + targetRadius);
+					for (int y = startLoop; y < map.length && Math.abs(y - startLoop) < maxDistanceFromTarget; y++) {
 						if (map[y][x + r] == Unit.WALL) {
 							numWalls++;
 							if (numWalls > numWallsAllowed) {
+								unexploredSpace[0] += map.length - 1 - y;
 								break;
 							}
 						} else if (Unit.isBase(map[y][x + r])) {
@@ -550,10 +677,12 @@ public class Brute extends Bot {
 					}
 					
 					numWalls = 0;
-					for (int y = target.y - (3 + targetRadius); y >=0; y--) {
+					startLoop = target.y - (3 + targetRadius);
+					for (int y = startLoop; y >=0 && Math.abs(y - startLoop) < maxDistanceFromTarget; y--) {
 						if (map[y][x + r] == Unit.WALL) {
 							numWalls++;
 							if (numWalls > numWallsAllowed) {
+								unexploredSpace[0] += y;
 								break;
 							}
 							continue;
@@ -568,10 +697,12 @@ public class Brute extends Bot {
 				
 				if (gameState.isInMap(new Point(0, y + r))) {
 					numWalls = 0;
-					for (x = target.x + (3 + targetRadius); x < map[0].length; x++) {
+					startLoop = target.x + (3 + targetRadius);
+					for (x = startLoop; x < map[0].length && Math.abs(x - startLoop) < maxDistanceFromTarget; x++) {
 						if (map[y + r][x] == Unit.WALL) {
 							numWalls++;
 							if (numWalls > numWallsAllowed) {
+								unexploredSpace[0] += map[0].length - 1 - y;
 								break;
 							}
 						} else if (Unit.isBase(map[y + r][x])) {
@@ -581,10 +712,12 @@ public class Brute extends Bot {
 					}
 					
 					numWalls = 0;
-					for (x = target.x - (3 + targetRadius); x >=0; x--) {
+					startLoop = target.x - (3 + targetRadius);
+					for (x = startLoop; x >=0 && Math.abs(x - startLoop) < maxDistanceFromTarget; x--) {
 						if (map[y + r][x] == Unit.WALL) {
 							numWalls++;
 							if (numWalls > numWallsAllowed) {
+								unexploredSpace[0] += x;
 								break;
 							}
 							continue;

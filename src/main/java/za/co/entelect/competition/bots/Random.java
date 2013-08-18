@@ -13,8 +13,7 @@ public class Random extends Bot {
 	@Override
 	public int[] getActions(GameState gameState, int timeLimitMS) {
 		return Random.getActionsStatic();
-	}
-	
+	}	
 
 	public static int[] getActionsStatic() {
 		int[] next = new int[2];
@@ -32,6 +31,23 @@ public class Random extends Bot {
 		next[0] = action;
 		next[1] = action2;
 		return next;
-	}
+	}	
 
+	public static int[] getActionsStaticDontFire() {
+		int[] next = new int[2];
+		
+		int action = Util.javaRandom.nextInt(5);
+		if (action >= 4) {
+			action += 8;
+		}
+		
+		int action2 = Util.javaRandom.nextInt(5);
+		if (action2 >= 4) {
+			action2 += 8;
+		}
+		
+		next[0] = action;
+		next[1] = action2;
+		return next;
+	}
 }

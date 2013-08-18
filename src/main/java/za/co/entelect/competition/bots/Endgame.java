@@ -70,7 +70,8 @@ public class Endgame extends Bot {
 					goalArea = getGoalArea(gameState, map, startPoint, target, numWallsAllowed);
 					int[] totalNodesVisited = new int[1];
 					start = new PointS(startPoint.x, startPoint.y, 0, 'X');
-					path = PathFind.BFSFinder(start, goalArea, target, grid, totalNodesVisited, gameState, PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET, null, null);
+					path = PathFind.BFSFinder(start, goalArea, target, grid, totalNodesVisited,
+							PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET, null, null);
 					
 					numWallsAllowed++;
 				}

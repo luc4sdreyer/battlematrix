@@ -16,6 +16,7 @@ public class PathFind {
 	
 	public static final int GOAL_PREFERENCE_CLOSEST_TO_TARGET = 0;
 	public static final int GOAL_PREFERENCE_CLOSEST_TO_START = 1;
+	public static final int GOAL_PREFERENCE_FIRST_FOUND = 2;
 
 	/**
 	 * Compares an A* search to a BFS. 
@@ -160,11 +161,23 @@ public class PathFind {
 			GameState gameState, int goalPreference) {
 		HashSet<Point> goalSet = new HashSet<Point>();
 		goalSet.add(goal.p);
-		return BFSFinder(start, goalSet, goal.p, grid, totalNodesVisited, gameState, goalPreference, null, null);
+		return BFSFinder(start, goalSet, goal.p, grid, totalNodesVisited, goalPreference, null, null);
 	}
 
+	/**
+	 * 
+	 * @param start					Where the search starts
+	 * @param goalArea				A set of points that are goals.
+	 * @param goalCenter			Used if goalPreference = GOAL_PREFERENCE_CLOSEST_TO_TARGET to determine the best goal. 
+	 * @param grid					A boolean grid of accessible area.
+	 * @param totalNodesVisited		Statistical use.
+	 * @param goalPreference		Used to determine which goal to choose if more than one goal can be reached.
+	 * @param bulletGrid			Optional. Will avoid an grid cell if a bullet will reach it before the shortest path can.
+	 * @param ticksUntilBulletHit	Optional. Returns the minimum number of ticks before a bullet will hit you. 
+	 * @return
+	 */
 	public static ArrayList<PointS> BFSFinder(PointS start, HashSet<Point> goalArea, Point goalCenter, boolean[][] grid, 
-			int[] totalNodesVisited, GameState gameState, int goalPreference, int[][] bulletGrid, int[] ticksUntilBulletHit) {
+			int[] totalNodesVisited, int goalPreference, int[][] bulletGrid, int[] ticksUntilBulletHit) {
 		if (goalArea.contains(start.p)) {
 			if ((ticksUntilBulletHit != null) && (bulletGrid[start.p.y][start.p.x] - start.g  < ticksUntilBulletHit[0])) {
 				ticksUntilBulletHit[0] = bulletGrid[start.p.y][start.p.x] - start.g;
@@ -194,7 +207,11 @@ public class PathFind {
 			if (goalArea.contains(current.p)) {
 				goalArea.remove(current.p);
 				reachableGoals.add(current);
-				continue;
+				if (goalPreference == PathFind.GOAL_PREFERENCE_FIRST_FOUND) {
+					break;
+				} else	{
+					continue;
+				}
 			}
 
 			ArrayList<PointS> neighs = current.getNeighbours(grid);
@@ -222,7 +239,7 @@ public class PathFind {
 			int min = Integer.MAX_VALUE;
 			int minIdx = -1;
 			for (int i = 0; i < reachableGoals.size(); i++) {
-				if (goalPreference == PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET) {
+				if (goalPreference == PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET && goalCenter != null) {
 					if (Util.mDist(reachableGoals.get(i).p, goalCenter) < min) {
 						min = Util.mDist(reachableGoals.get(i).p, goalCenter);
 						minIdx = i;
@@ -232,24 +249,29 @@ public class PathFind {
 						min = Util.mDist(reachableGoals.get(i).p, start.p);
 						minIdx = i;
 					}
+				} else if (goalPreference == PathFind.GOAL_PREFERENCE_FIRST_FOUND) {
+					minIdx = i;
 				}
 			}
 			PointS bestGoal = reachableGoals.get(minIdx);
 			
-			if ((ticksUntilBulletHit != null) && (bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g  < ticksUntilBulletHit[0])) {
+			if ((ticksUntilBulletHit != null) && (bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g < ticksUntilBulletHit[0])) {
 				ticksUntilBulletHit[0] = bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g;
 			}
 
 			shortestPath.add(bestGoal);
 			PointS prev = came_from[bestGoal.p.y][bestGoal.p.x];
 			while (!prev.equals(start)) {
-				if ((ticksUntilBulletHit != null) && (bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g  < ticksUntilBulletHit[0])) {
-					ticksUntilBulletHit[0] = bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g;
+				if ((ticksUntilBulletHit != null) && (bulletGrid[prev.p.y][prev.p.x] - prev.g < ticksUntilBulletHit[0])) {
+					ticksUntilBulletHit[0] = bulletGrid[prev.p.y][prev.p.x] - prev.g;
 				}
 				shortestPath.add(prev);
 				prev = came_from[prev.p.y][prev.p.x];
 			}
 			
+			if ((ticksUntilBulletHit != null) && (bulletGrid[start.p.y][start.p.x] - start.g < ticksUntilBulletHit[0])) {
+				ticksUntilBulletHit[0] = bulletGrid[start.p.y][start.p.x] - start.g;
+			}
 			
 			Collections.reverse(shortestPath);
 			return shortestPath;

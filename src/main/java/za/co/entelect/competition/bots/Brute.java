@@ -35,6 +35,7 @@ public class Brute extends Bot {
 	private boolean swapMyTanks = false;
 	private boolean swapEnemyTanks = false;
 	private boolean attackBaseSooner = true;
+	private boolean alwaysCheckForEvasiveAction = true;
 	
 	private static final boolean printGoalArea = false;
 	private static final boolean printBulletGrid = false;
@@ -190,20 +191,60 @@ public class Brute extends Bot {
 					//
 					int numWallsAllowed = 0;
 					Point startPoint = new Point();
+					startPoint.setLocation(	gameState.getTanks()[tankIdx].getPosition().x + 2, 
+											gameState.getTanks()[tankIdx].getPosition().y + 2);
+					
+					if (this.alwaysCheckForEvasiveAction) {
+						if (bulletGrid[startPoint.y][startPoint.x] < GameState.maxNumBlocks) {
+							//
+							// There is a chance of being hit by a bullet, take evasive action if necessary.
+							//
+							HashSet<Point> safeArea = new HashSet<Point>();
+							for (int y = 0; y < grid.length; y++) {
+								for (int x = 0; x < grid[0].length; x++) {
+									if (!grid[y][x] && bulletGrid[y][x] == GameState.maxNumBlocks) {
+										safeArea.add(new Point(x,y));
+									}
+								}
+							}
+							int[] totalNodesVisited = new int[1];
+							PointS start = new PointS(startPoint.x, startPoint.y, 0, 'X');
+							path = PathFind.BFSFinder(start, safeArea, target, grid, totalNodesVisited,
+									PathFind.GOAL_PREFERENCE_FIRST_FOUND, bulletGrid, ticksUntilBulletHit);
+							if (ticksUntilBulletHit[0] == 1) {
+								//
+								// You have to move right now or be destroyed.
+								//
+								if (!path.isEmpty()) {
+									path.add(0, start);
+									Point tankCenter = new Point(me.getPosition());
+									tankCenter.translate(2, 2);
+									if (!tankCenter.equals(path.get(0).getP())) {
+										System.out.println("FATAL ERROR: position does not match path!");
+									} 
+									int direction = Util.getDirection(path.get(0).getP(), path.get(1).getP());									
+									gameActions[gameActionIdx] = direction;									
+									path.remove(0);									
+									continue;
+								}
+							}							
+						}
+					}
+					
 					PointS start = null;
 					path = new ArrayList<PointS>();
 					int[] unexploredSpace = new int[1]; 
 					unexploredSpace[0] = 1;
 					
-					// TODO: Here you can optimize by looking at all the paths, and then choosing the best one.
+					// TODO: Here you can optimise by looking at all the paths, and then choosing the best one.
 					//while(path.isEmpty() && numWallsAllowed < Math.max(map.length, map[0].length)) {
 					while(path.isEmpty() && unexploredSpace[0] > 0) {
 						unexploredSpace[0] = 0;
-						goalArea = getGoalArea(gameState, map, startPoint, target, numWallsAllowed, targetRadius,
+						goalArea = getGoalArea(gameState, map, target, numWallsAllowed, targetRadius,
 								tankIdx, unexploredSpace, maxDistanceFromTarget);
 						int[] totalNodesVisited = new int[1];
 						start = new PointS(startPoint.x, startPoint.y, 0, 'X');
-						path = PathFind.BFSFinder(start, goalArea, target, grid, totalNodesVisited, gameState,
+						path = PathFind.BFSFinder(start, goalArea, null, grid, totalNodesVisited,
 								PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit);
 						
 						numWallsAllowed++;
@@ -214,7 +255,7 @@ public class Brute extends Bot {
 							System.err.println("Could not find a path");
 						}
 						//active = false;
-						gameActions[gameActionIdx] = Random.getActionsStatic()[gameActionIdx];
+						gameActions[gameActionIdx] = Random.getActionsStaticDontFire()[gameActionIdx];
 						continue;
 					}
 					
@@ -418,6 +459,9 @@ public class Brute extends Bot {
 		}
 	}
 
+	/**
+	 * This grid is true where movement is not allowed.
+	 */
 	private boolean[][] getBasicGrid(int[][] map) {
 		boolean[][] grid = new boolean[map.length][map[0].length];
 		for (int y = 0; y < grid.length; y++) {
@@ -453,7 +497,7 @@ public class Brute extends Bot {
 					if (i/2 == enemyIndex) {
 						Tank t = gameState.getTanks()[i];
 						if (t.isAlive()) {
-							int numBulletSteps = 1;
+							int numBulletSteps = 2;
 							for (int rotation = 0; rotation < 4; rotation++) {
 								Point bulletPosition = new Point(t.getPosition().x + GameState.tankSize/2, t.getPosition().y + GameState.tankSize/2);
 								bulletPosition = Util.movePoint(bulletPosition, (t.getRotation() + rotation) % 4);
@@ -583,13 +627,8 @@ public class Brute extends Bot {
 		return bulletGrid;
 	}
 
-	private HashSet<Point> getGoalArea(GameState gameState, int[][] map, Point start, Point target,
+	private HashSet<Point> getGoalArea(GameState gameState, int[][] map, Point target,
 			int numWallsAllowed, int targetRadius, int tankIdx, int[] unexploredSpace, int maxDistanceFromTarget) {
-
-		start.setLocation(	gameState.getTanks()[tankIdx].getPosition().x + 2, 
-							gameState.getTanks()[tankIdx].getPosition().y + 2);
-		
-		
 		HashSet<Point> goalArea = new HashSet<Point>();
 		int numWalls = 0;
 				

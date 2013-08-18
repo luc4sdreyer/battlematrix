@@ -125,7 +125,7 @@ public class Simulator implements Runnable {
 				System.out.println("Failed to make connection!");
 			}
 		} else {
-			numSims = 6;
+			numSims = 8;
 		}
 
 
@@ -149,8 +149,11 @@ public class Simulator implements Runnable {
 					mapString += str + "\n";
 				}
 			} else {
-				//gameFile = Game.readGameFromFile("map.txt");
-				gameFile = Game.readGameFromFile("mapE1_" + (j%8) + ".txt");
+				String mapName = null;
+				//mapName = "mapE1_3.txt";
+				mapName = "mapE1_" + (j%8) + ".txt";
+				gameFile = Game.readGameFromFile(mapName);
+				System.out.println("Playing on map: " + mapName);
 				
 //				int minWidth = 80;
 //				int maxWidth = 100;

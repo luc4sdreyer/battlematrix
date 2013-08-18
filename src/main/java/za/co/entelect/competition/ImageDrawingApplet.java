@@ -476,7 +476,7 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
 							//"map.txt",
-							"mapE1_7.txt",
+							"mapE1_2.txt",
 							//gameState,
 							//gameList,
 							false);

@@ -21,7 +21,7 @@ import za.co.entelect.competition.PathFind.PointS;
  * 
  */
 
-public class Brute extends Bot {	
+public class BruteV2 extends Bot {	
 	
 	private ArrayList<PointS> path;
 	private boolean active = true;
@@ -37,15 +37,17 @@ public class Brute extends Bot {
 	private boolean attackBaseSooner = true;
 	private boolean alwaysCheckForEvasiveAction = true;
 	
-	// Timing
+	// Statistics
 	private long sumTotalTime = 0;
 	private long sumSearchTime = 0;
+	private int numSearchRequests = 0;
+	private int numSearches = 0;
 	
 	private static final boolean printGoalArea = false;
 	private static final boolean printBulletGrid = false;
-	private static final boolean printExtraOutput = true;
+	private static final boolean printExtraOutput = false;
 
-	public Brute(int playerIndex) {
+	public BruteV2(int playerIndex) {
 		super(playerIndex);
 	}
 
@@ -66,6 +68,9 @@ public class Brute extends Bot {
 		HashSet<Point> goalArea = new HashSet<Point>();
 		//Tank myT2 = gameState.getTanks()[myT2Idx];
 		int[][] map = gameState.getMap();
+		boolean[][] grid = null;
+		int[][] bulletGrid = null;
+		HashSet<Point> safeArea = null;
 		
 		if (!gameState.getTanks()[2 * getPlayerIndex()].isAlive() && !gameState.getTanks()[2 * getPlayerIndex() + 1].isAlive()) {
 			gameActions = Random.getActionsStatic();
@@ -184,12 +189,16 @@ public class Brute extends Bot {
 					//
 					// Convert map to grid. 
 					//
-					boolean[][] grid = getBasicGrid(map);
+					if (grid == null) {
+						grid = getBasicGrid(map);
+					}
 					
 					//
 					// Generate Bullet grid for basic Bullet avoidance
 					//
-					int[][] bulletGrid = getBulletGrid(gameState, enemyIndex);
+					if (bulletGrid == null) {
+						bulletGrid = getBulletGrid(gameState, enemyIndex);
+					}
 					
 					// TODO: Assume that base units won't be in the absolute corner and on the edge.
 					//
@@ -205,14 +214,17 @@ public class Brute extends Bot {
 							//
 							// There is a chance of being hit by a bullet, take evasive action if necessary.
 							//
-							HashSet<Point> safeArea = new HashSet<Point>();
-							for (int y = 0; y < grid.length; y++) {
-								for (int x = 0; x < grid[0].length; x++) {
-									if (!grid[y][x] && bulletGrid[y][x] == GameState.maxNumBlocks) {
-										safeArea.add(new Point(x,y));
+							if (safeArea == null) {
+								safeArea = new HashSet<Point>();
+								for (int y = 0; y < grid.length; y++) {
+									for (int x = 0; x < grid[0].length; x++) {
+										if (!grid[y][x] && bulletGrid[y][x] == GameState.maxNumBlocks) {
+											safeArea.add(new Point(x,y));
+										}
 									}
 								}
 							}
+							
 							int[] totalNodesVisited = new int[1];
 							PointS start = new PointS(startPoint.x, startPoint.y, 0, 'X');
 							long tempTime = System.nanoTime();
@@ -240,19 +252,30 @@ public class Brute extends Bot {
 						}
 					}
 					
-					PointS start = null;
+					PointS start = new PointS(startPoint.x, startPoint.y, 0, 'X');
 					path = new ArrayList<PointS>();
 					int[] unexploredSpace = new int[1]; 
 					unexploredSpace[0] = 1;
 					
 					// TODO: Here you can optimise by looking at all the paths, and then choosing the best one.
 					//while(path.isEmpty() && numWallsAllowed < Math.max(map.length, map[0].length)) {
+					numSearchRequests++;
+					int prevGoalSize = 0;
 					while(path.isEmpty() && unexploredSpace[0] > 0) {
 						unexploredSpace[0] = 0;
+						prevGoalSize = goalArea.size();
 						goalArea = getGoalArea(gameState, map, target, numWallsAllowed, targetRadius,
 								tankIdx, unexploredSpace, maxDistanceFromTarget);
+						if (goalArea.size() == prevGoalSize) {
+							//
+							// The search cannot find anything new with the same area.
+							//
+							//prevGoalSize 					
+							numWallsAllowed++;
+							continue;
+						}
+						numSearches++;
 						int[] totalNodesVisited = new int[1];
-						start = new PointS(startPoint.x, startPoint.y, 0, 'X');
 						long tempTime = System.nanoTime();
 						path = PathFind.BFSFinder(start, goalArea, null, grid, totalNodesVisited,
 								PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit);
@@ -457,7 +480,8 @@ public class Brute extends Bot {
 					+ "\tTotal time: " + Util.padRight(String.format("%.2fms", (totalTime/1000000.0)), 8)
 					+ "Search time: " + String.format("%.2f", ((double)(searchTime * 10000 / totalTime))/100) + "%"
 					+ "\n\tCumulative Total time: " + Util.padRight(String.format("%.2fms", (sumTotalTime/1000000.0)), 10)
-					+ "Cumulative Search time: " + String.format("%.2f", ((double)(sumSearchTime * 10000 / sumTotalTime))/100) + "%"
+					+ "Cumulative Search time: " + Util.padRight(String.format("%.2f", ((double)(sumSearchTime * 10000 / sumTotalTime))/100) + "%", 8)
+					+ " search LF: " + Util.padRight(String.format("%.2fms", (numSearches/(double)numSearchRequests)), 10)
 					);
 		}
 		return gameActions;

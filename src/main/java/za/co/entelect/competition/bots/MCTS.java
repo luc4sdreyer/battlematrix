@@ -1,5 +1,6 @@
 package za.co.entelect.competition.bots;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -8,23 +9,9 @@ import za.co.entelect.competition.Util;
 
 public class MCTS extends Bot {
 
-	protected boolean ignoreTimeLimit;
-	
-	public long numGames = 0;
-    public long numTicks = 0;
-    public long numNodes = 0;
-    public long newTranspositionTableHits = 0;
-    public GameState origin;
-    public HashMap<Long, Long> transpositionTable;
-    
-    // Timing
-    public long timeTotalCloning = 0;
-    public long timeTotalSim = 0;
-	
 	public MCTS(int playerIndex) {
 		super(playerIndex);
 		super.setDebugLevel(1);
-		ignoreTimeLimit = true;
 	}
 
 	@Override
@@ -33,28 +20,21 @@ public class MCTS extends Bot {
 		Arrays.fill(gameActions, -1);
 		
 		if (gameState.isActive()) {
-			this.numGames = 0;
-			this.numTicks = 0;
-			this.numNodes = 0;
-			this.newTranspositionTableHits = 0;
-			this.timeTotalCloning = 0;
-			this.timeTotalSim = 0;
-			this.origin = gameState;
-			this.transpositionTable = new HashMap<Long, Long>();
-			TreeNode root = new TreeNode(null, 1, this);
+			TreeNode.numGames = 0;
+			TreeNode.numTicks = 0;
+			TreeNode.numNodes = 0;
+			TreeNode.newTranspositionTableHits = 0;
+			TreeNode.timeTotalCloning = 0;
+			TreeNode.timeTotalSim = 0;
+			TreeNode.origin = gameState;
+			TreeNode.transpositionTable = new HashMap<Long, Long>();
+			TreeNode root = new TreeNode(null, 1);
 			
-			long t1 = System.nanoTime();
-			if (ignoreTimeLimit) {
-				for (int i = 0; i < 10000; i++) {
-					TreeNode.selectAction(root, this);
-				}
-				t1 = System.nanoTime() - t1;
-			} else {
-				long timeLimitNS = timeLimitMS * 1000000;
-				while (System.nanoTime() - t1 < timeLimitNS) {
-					TreeNode.selectAction(root, this);
-				}
+			long t1 = System.nanoTime();			
+			for (int i = 0; i < 10000; i++) {
+				TreeNode.selectAction(root);
 			}
+			t1 = System.nanoTime() - t1;			
 			
 			TreeNode child = root.selectFinal();
 			TreeNode grandChild = null;
@@ -90,7 +70,7 @@ public class MCTS extends Bot {
 			
 			if (this.getDebugLevel() > 0) {
 				System.out.println("Time: " 	+ Util.padRight(t1/1000000 + "", 8)
-						+ "Clone/Sim ratio: "	+ Util.padRight((int)(this.timeTotalCloning*100/t1) + "%/" + (int)(this.timeTotalSim*100/t1) + "%", 8)
+						+ "Clone/Sim ratio: "	+ Util.padRight((int)(TreeNode.timeTotalCloning*100/t1) + "%/" + (int)(TreeNode.timeTotalSim*100/t1) + "%", 8)
 						+ "Success rate: " 		+ Util.padRight(String.format("%.2f", chosenNode.getSuccessRate()*100) + "%", 8) + " " + childResults						
 						//+ "Num TreeNodes: "		+ Util.padRight((int)(TreeNode.numNodes) + "", 8)
 						//+ "Num TPT hits: "		+ Util.padRight(TreeNode.newTranspositionTableHits + "", 6)

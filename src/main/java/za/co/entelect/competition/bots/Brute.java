@@ -37,13 +37,9 @@ public class Brute extends Bot {
 	private boolean attackBaseSooner = true;
 	private boolean alwaysCheckForEvasiveAction = true;
 	
-	// Timing
-	private long sumTotalTime = 0;
-	private long sumSearchTime = 0;
-	
 	private static final boolean printGoalArea = false;
 	private static final boolean printBulletGrid = false;
-	private static final boolean printExtraOutput = true;
+	private static final boolean printExtraOutput = false;
 
 	public Brute(int playerIndex) {
 		super(playerIndex);
@@ -51,8 +47,6 @@ public class Brute extends Bot {
 
 	@Override
 	public int[] getActions(GameState originalGameState, int timeLimitMS) {
-		long totalTime = System.nanoTime();
-		long searchTime = 0;
 		if (!initialized) {
 			this.init(originalGameState);
 		}
@@ -189,7 +183,7 @@ public class Brute extends Bot {
 					//
 					// Generate Bullet grid for basic Bullet avoidance
 					//
-					int[][] bulletGrid = getBulletGrid(gameState, enemyIndex);
+					int[][] bulletGrid = getBulletGrid(gameState, tankIdx, enemyIndex);
 					
 					// TODO: Assume that base units won't be in the absolute corner and on the edge.
 					//
@@ -215,11 +209,8 @@ public class Brute extends Bot {
 							}
 							int[] totalNodesVisited = new int[1];
 							PointS start = new PointS(startPoint.x, startPoint.y, 0, 'X');
-							long tempTime = System.nanoTime();
 							path = PathFind.BFSFinder(start, safeArea, target, grid, totalNodesVisited,
 									PathFind.GOAL_PREFERENCE_FIRST_FOUND, bulletGrid, ticksUntilBulletHit);
-							tempTime = System.nanoTime() - tempTime;
-							searchTime += tempTime;
 							if (ticksUntilBulletHit[0] == 1) {
 								//
 								// You have to move right now or be destroyed.
@@ -253,12 +244,9 @@ public class Brute extends Bot {
 								tankIdx, unexploredSpace, maxDistanceFromTarget);
 						int[] totalNodesVisited = new int[1];
 						start = new PointS(startPoint.x, startPoint.y, 0, 'X');
-						long tempTime = System.nanoTime();
 						path = PathFind.BFSFinder(start, goalArea, null, grid, totalNodesVisited,
 								PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit);
 						
-						tempTime = System.nanoTime() - tempTime;
-						searchTime += tempTime;						
 						numWallsAllowed++;
 					}
 					
@@ -447,18 +435,8 @@ public class Brute extends Bot {
 				}
 			}
 		}
-		totalTime = System.nanoTime() - totalTime;
-		
-		sumSearchTime += searchTime;
-		sumTotalTime += totalTime;
-		
 		if (printExtraOutput) {
-			System.out.println("\tBrute actions: "+GameAction.toString(gameActions[0])+" "+GameAction.toString(gameActions[1]) + " " 
-					+ "\tTotal time: " + Util.padRight(String.format("%.2fms", (totalTime/1000000.0)), 8)
-					+ "Search time: " + String.format("%.2f", ((double)(searchTime * 10000 / totalTime))/100) + "%"
-					+ "\n\tCumulative Total time: " + Util.padRight(String.format("%.2fms", (sumTotalTime/1000000.0)), 10)
-					+ "Cumulative Search time: " + String.format("%.2f", ((double)(sumSearchTime * 10000 / sumTotalTime))/100) + "%"
-					);
+			System.out.println("\t\tBrute actions: "+GameAction.toString(gameActions[0])+" "+GameAction.toString(gameActions[1]));
 		}
 		return gameActions;
 	}
@@ -498,7 +476,7 @@ public class Brute extends Bot {
 		return grid;
 	}
 
-	private int[][] getBulletGrid(GameState originalState, int enemyIndex) {
+	private int[][] getBulletGrid(GameState originalState, int meIdx, int enemyIndex) {
 		GameState gameState = originalState.clone();
 		int[][] map = gameState.getMap();
 		int[][] bulletGrid = new int[map.length][map[0].length];

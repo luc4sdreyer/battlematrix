@@ -471,19 +471,16 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.Minimax",
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
 							//"za.co.entelect.competition.bots.Endgame",
-							"za.co.entelect.competition.bots.Random",
-							"za.co.entelect.competition.bots.BruteV2",
+							"za.co.entelect.competition.bots.Random",		
+							"za.co.entelect.competition.bots.Brute",
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
 							//"map.txt",
-							"mapE1_0.txt",
-							//"mapBattle0.txt",
+							"mapE1_2.txt",
 							//gameState,
 							//gameList,
 							false);
-		//mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
-		//GameState.maxTurns = 100;
-		
+//		mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
 //		gameState.getTanks()[3].setAlive(false);

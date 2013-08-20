@@ -58,8 +58,7 @@ public class GameState {
 	public static final int MAP_TYPE_E0 = 1;
 	
 	public final static int tankSize = 5;
-	//TODO: Set to final maxTurns
-	public static int maxTurns = 500;
+	public final static int maxTurns = 500;
 	public final static int maxNumBlocks = 10000;
 	
 	private int[][] map;

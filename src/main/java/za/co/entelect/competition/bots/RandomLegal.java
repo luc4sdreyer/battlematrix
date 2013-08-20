@@ -31,8 +31,10 @@ public class RandomLegal extends Bot {
 		
     	int[] next = new int[2];
 		
-		next[0] = t1Moves.get(Math.abs(Util.random.nextInt()) % t1Moves.size());
-		next[1] = t2Moves.get(Math.abs(Util.random.nextInt()) % t2Moves.size());
+		next[0] = t1Moves.get(Util.javaRandom.nextInt(t1Moves.size()));
+		next[1] = t2Moves.get(Util.javaRandom.nextInt(t2Moves.size()));
+		//next[0] = t1Moves.get(Math.abs(Util.random.nextInt()) % t1Moves.size());
+		//next[1] = t2Moves.get(Math.abs(Util.random.nextInt()) % t2Moves.size());
 		return next;
 	}
 

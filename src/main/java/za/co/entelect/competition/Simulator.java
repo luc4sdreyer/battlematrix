@@ -20,7 +20,7 @@ public class Simulator implements Runnable {
 	public static final boolean dbMode = false;
 	public static boolean saveGamesWhereP1Loses = false;
 	public static boolean saveGamesWhereP2Loses = false;
-	public static final int numThreads = 5;
+	public static final int numThreads = 1;
 	public static Connection connection = null;
 	
 	private Game game;
@@ -48,10 +48,13 @@ public class Simulator implements Runnable {
 		this.game.getGameState().setMapType();
 		//this.game.getGameState().setDebugMode(true);
 		//this.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
+		//GameState.maxTurns = 50;
 		
 		if (saveGamesWhereP1Loses || saveGamesWhereP2Loses) {
 			this.game.getGameState().setDebugMode(true);
 		}
+		
+		//System.out.println("Started simID: " +simID );
 	}
 
 	@Override
@@ -71,6 +74,7 @@ public class Simulator implements Runnable {
 			active = this.game.nextTick(overrideActions, null, timeLimit);
 		}
 
+		//System.out.println("Completed  ID: " +simID );
 		this.game.generateResult(this.result);
 		if (saveGamesWhereP1Loses || saveGamesWhereP2Loses) {
 			if ((saveGamesWhereP1Loses && this.game.getGameState().getStatus() == GameState.STATUS_PLAYER2_WINS)
@@ -125,7 +129,7 @@ public class Simulator implements Runnable {
 				System.out.println("Failed to make connection!");
 			}
 		} else {
-			numSims = 8;
+			numSims = 3;
 		}
 
 
@@ -134,10 +138,9 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 200;
+				numTests = 1000;
 			}
 			long time = System.nanoTime();
-			ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
 			ArrayList<String> gameFile = null;
 			String mapString = null;
@@ -152,7 +155,9 @@ public class Simulator implements Runnable {
 				String mapName = null;
 				//mapName = "mapE1_3.txt";
 				mapName = "mapE1_" + (j%8) + ".txt";
+				//mapName = "mapBattle" + (j%3) + ".txt";
 				gameFile = Game.readGameFromFile(mapName);
+				
 				System.out.println("Playing on map: " + mapName);
 				
 //				int minWidth = 80;
@@ -191,29 +196,51 @@ public class Simulator implements Runnable {
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
+					//"za.co.entelect.competition.bots.MCTS"
+					//"za.co.entelect.competition.bots.Brute"
+					//"za.co.entelect.competition.bots.BruteV2"
 					;
 
 			String bot2 =
-					"za.co.entelect.competition.bots.Brute"
+					//"za.co.entelect.competition.bots.Random"
+					//"za.co.entelect.competition.bots.Endgame"
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
+					//"za.co.entelect.competition.bots.MCTS"
+					//"za.co.entelect.competition.bots.Brute"
+					"za.co.entelect.competition.bots.BruteV2"
 					;
 
 			ArrayList<Result> results = new ArrayList<Result>();
-			for (int i = 0; i < numTests; i++) {
-				Result nextResult = new Result();
-				results.add(nextResult);
-				Simulator sim = null;
-				//if (i < numTests/2) {
-				sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2, i);
-				//} else {
-				//	sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1);
-				//}
-				executor.execute(sim);
-			}
-			executor.shutdown();
-			while (!executor.isTerminated()) {
+			if (numThreads == 1) {
+				for (int i = 0; i < numTests; i++) {
+					Result nextResult = new Result();
+					results.add(nextResult);
+					Simulator sim = null;
+					//if (i < numTests/2) {
+					sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2, i);
+					//} else {
+					//	sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1);
+					//}
+					sim.run();
+				}
+			} else {
+				ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+				for (int i = 0; i < numTests; i++) {
+					Result nextResult = new Result();
+					results.add(nextResult);
+					Simulator sim = null;
+					//if (i < numTests/2) {
+					sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2, i);
+					//} else {
+					//	sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1);
+					//}
+					executor.execute(sim);
+				}
+				executor.shutdown();
+				while (!executor.isTerminated()) {
+				}
 			}
 
 			HashMap<String, int[]> resultMap = new HashMap<String, int[]>();

@@ -198,7 +198,7 @@ public class PathFind {
 		boolean[][] visited = new boolean[grid.length][grid[0].length];
 		visited[start.p.y][start.p.x] = true;
 
-		while (!queue.isEmpty()) {
+		while (!queue.isEmpty() && !goalArea.isEmpty()) {
 			current = queue.poll();
 
 			totalNodesVisited[0]++;

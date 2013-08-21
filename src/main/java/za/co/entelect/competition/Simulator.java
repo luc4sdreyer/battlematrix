@@ -11,6 +11,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -20,7 +21,8 @@ public class Simulator implements Runnable {
 	public static final boolean dbMode = false;
 	public static boolean saveGamesWhereP1Loses = false;
 	public static boolean saveGamesWhereP2Loses = false;
-	public static final int numThreads = 1;
+	public static boolean saveGamesWhereDraws = true;
+	public static final int numThreads = 5;
 	public static Connection connection = null;
 	
 	private Game game;
@@ -50,7 +52,7 @@ public class Simulator implements Runnable {
 		//this.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
 		//GameState.maxTurns = 50;
 		
-		if (saveGamesWhereP1Loses || saveGamesWhereP2Loses) {
+		if (saveGamesWhereP1Loses || saveGamesWhereP2Loses || saveGamesWhereDraws) {
 			this.game.getGameState().setDebugMode(true);
 		}
 		
@@ -76,9 +78,10 @@ public class Simulator implements Runnable {
 
 		//System.out.println("Completed  ID: " +simID );
 		this.game.generateResult(this.result);
-		if (saveGamesWhereP1Loses || saveGamesWhereP2Loses) {
+		if (saveGamesWhereP1Loses || saveGamesWhereP2Loses || saveGamesWhereDraws) {
 			if ((saveGamesWhereP1Loses && this.game.getGameState().getStatus() == GameState.STATUS_PLAYER2_WINS)
-					|| (saveGamesWhereP2Loses && this.game.getGameState().getStatus() == GameState.STATUS_PLAYER1_WINS)) {
+					|| (saveGamesWhereP2Loses && this.game.getGameState().getStatus() == GameState.STATUS_PLAYER1_WINS)
+					|| (saveGamesWhereDraws && this.game.getGameState().getStatus() == GameState.STATUS_DRAW)) {
 				BufferedWriter fileWriter = null;
 		        File currentMoveList = new File("movelists\\" + Util.date.format(Calendar.getInstance().getTime()) + "_" + this.simID + ".txt");
 		        try {
@@ -102,6 +105,7 @@ public class Simulator implements Runnable {
 	public static void main(String[] args) {		
 		@SuppressWarnings("unused")
 		int zTableInitializer = Util.zTable.length;
+		ArrayList<Integer> times = new ArrayList<Integer>();
 
 		int numSims;
 		if (dbMode) {
@@ -129,7 +133,7 @@ public class Simulator implements Runnable {
 				System.out.println("Failed to make connection!");
 			}
 		} else {
-			numSims = 3;
+			numSims = 5;
 		}
 
 
@@ -154,7 +158,8 @@ public class Simulator implements Runnable {
 			} else {
 				String mapName = null;
 				//mapName = "mapE1_3.txt";
-				mapName = "mapE1_" + (j%8) + ".txt";
+				mapName = "mapE1_" + (j%4) + ".txt";
+				//mapName = "mapE1_0.txt";
 				//mapName = "mapBattle" + (j%3) + ".txt";
 				gameFile = Game.readGameFromFile(mapName);
 				
@@ -188,7 +193,8 @@ public class Simulator implements Runnable {
 				//gameFile = newGame.toStringList();
 				
 			}
-			ArrayList<Integer>[] moveList = null; //ImageDrawingApplet.loadMoveList();
+			ArrayList<Integer>[] moveList = ImageDrawingApplet.loadMoveList();
+			moveList = null;
 
 			String bot1 =
 					"za.co.entelect.competition.bots.Random"
@@ -289,9 +295,11 @@ public class Simulator implements Runnable {
 			//		System.out.println(wld[0]+" "+wld[2]+" "+wld[1]);
 
 			int milliSeconds = (int) ((System.nanoTime() - time)/1000000);
+			times.add(milliSeconds);
 			System.out.println("Total time: " + milliSeconds + "ms");
 			System.out.println("Speed: " + numGames * 1000 / milliSeconds + " games/s, " + numTicks * 1000 / milliSeconds + " ticks/s");
 		}
+		System.out.println("\nFastest sim: " + Collections.min(times));
 		if (dbMode) {
 			try {
 				connection.close();

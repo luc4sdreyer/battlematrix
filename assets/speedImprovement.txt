@@ -1,0 +1,13 @@
+Random vs BruteV2
+Fastest sim: 2180
+
+Random vs Brute
+Fastest sim: 2345
+
+
+Random vs BruteV2
+Fastest sim: 2106
+
+Fastest sim: 1465
+
+Fastest sim: 1301	12917

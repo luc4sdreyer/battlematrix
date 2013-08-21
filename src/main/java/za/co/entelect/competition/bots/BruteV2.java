@@ -71,6 +71,7 @@ public class BruteV2 extends Bot {
 		boolean[][] grid = null;
 		int[][] bulletGrid = null;
 		HashSet<Point> safeArea = null;
+		PointS[][] came_from = null;
 		
 		if (!gameState.getTanks()[2 * getPlayerIndex()].isAlive() && !gameState.getTanks()[2 * getPlayerIndex() + 1].isAlive()) {
 			gameActions = Random.getActionsStatic();
@@ -227,9 +228,12 @@ public class BruteV2 extends Bot {
 							
 							int[] totalNodesVisited = new int[1];
 							PointS start = new PointS(startPoint.x, startPoint.y, 0, 'X');
+							if (came_from == null) {
+								came_from = new PointS[grid.length][grid[0].length]; 
+							}
 							long tempTime = System.nanoTime();
-							path = PathFind.BFSFinder(start, safeArea, target, grid, totalNodesVisited,
-									PathFind.GOAL_PREFERENCE_FIRST_FOUND, bulletGrid, ticksUntilBulletHit);
+							path = PathFind.BFSFinderFast(start, safeArea, target, grid, totalNodesVisited,
+									PathFind.GOAL_PREFERENCE_FIRST_FOUND, bulletGrid, ticksUntilBulletHit, came_from);
 							tempTime = System.nanoTime() - tempTime;
 							searchTime += tempTime;
 							if (ticksUntilBulletHit[0] == 1) {
@@ -260,7 +264,11 @@ public class BruteV2 extends Bot {
 					// TODO: Here you can optimise by looking at all the paths, and then choosing the best one.
 					//while(path.isEmpty() && numWallsAllowed < Math.max(map.length, map[0].length)) {
 					numSearchRequests++;
-					int prevGoalSize = 0;
+					int prevGoalSize = 0;					
+
+					if (came_from == null) {
+						came_from = new PointS[grid.length][grid[0].length]; 
+					}
 					while(path.isEmpty() && unexploredSpace[0] > 0) {
 						unexploredSpace[0] = 0;
 						prevGoalSize = goalArea.size();
@@ -277,8 +285,8 @@ public class BruteV2 extends Bot {
 						numSearches++;
 						int[] totalNodesVisited = new int[1];
 						long tempTime = System.nanoTime();
-						path = PathFind.BFSFinder(start, goalArea, null, grid, totalNodesVisited,
-								PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit);
+						path = PathFind.BFSFinderFast(start, goalArea, null, grid, totalNodesVisited,
+								PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit, came_from);
 						
 						tempTime = System.nanoTime() - tempTime;
 						searchTime += tempTime;						

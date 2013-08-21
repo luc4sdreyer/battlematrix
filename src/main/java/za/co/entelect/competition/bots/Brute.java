@@ -43,7 +43,7 @@ public class Brute extends Bot {
 	
 	private static final boolean printGoalArea = false;
 	private static final boolean printBulletGrid = false;
-	private static final boolean printExtraOutput = true;
+	private static final boolean printExtraOutput = false;
 
 	public Brute(int playerIndex) {
 		super(playerIndex);

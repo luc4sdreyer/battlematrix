@@ -19,6 +19,9 @@ public class Game {
 	private boolean generateEGame;
 	private Result result;
 	
+	private long p1Time = 0;
+	private long p2Time = 0;
+	
 	public Game(Bot player1, Bot player2, GameState gameState, boolean generateEGame) {
 		super();
 		this.player1 = player1;
@@ -100,8 +103,17 @@ public class Game {
 		this.result = result;
 	}
 	public boolean nextTick(int[] overrideActions, int[] performedActions, int timeLimitMS) {
+		long tempTime = System.nanoTime();
 		int[] p1Moves = player1.getActions(this.gameState, timeLimitMS);
-		int[] p2Moves = player2.getActions(this.gameState, timeLimitMS);
+		p1Time += System.nanoTime() - tempTime;
+		
+		tempTime = System.nanoTime(); 
+		int[] p2Moves = player2.getActions(this.gameState, timeLimitMS);	
+		p2Time += System.nanoTime() - tempTime; 
+		
+		//System.out.println("Player 1 total time: " + Util.padRight((p1Time/1000000) + "ms", 8)
+		//		+ " Player 2 total time: " + Util.padRight((p2Time/1000000) + "ms", 8) + "scale: " + scale);
+		
 		int[] actions = new int[4];
 		
 		actions[0] = p1Moves[0];

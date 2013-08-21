@@ -280,6 +280,117 @@ public class PathFind {
 		}
 
 	}
+	
+	public static ArrayList<PointS> BFSFinderFast(PointS start, HashSet<Point> goalArea, Point goalCenter, boolean[][] grid, 
+			int[] totalNodesVisited, int goalPreference, int[][] bulletGrid, int[] ticksUntilBulletHit, 
+			PointS[][] came_from) {
+		if (goalArea.contains(start.p)) {
+			if ((ticksUntilBulletHit != null) && (bulletGrid[start.p.y][start.p.x] - start.g  < ticksUntilBulletHit[0])) {
+				ticksUntilBulletHit[0] = bulletGrid[start.p.y][start.p.x] - start.g;
+			}
+			return new ArrayList<PointS>();
+		}
+		
+		if (ticksUntilBulletHit != null) {
+			ticksUntilBulletHit[0] = GameState.maxNumBlocks;
+		}
+		
+		Queue<PointS> queue = new LinkedList<PointS>();
+		queue.add(start);
+		PointS current = null;
+		ArrayList<PointS> shortestPath = new ArrayList<PointS>();
+		ArrayList<PointS> reachableGoals = new ArrayList<PointS>();
+		//PointS[][] came_from = new PointS[grid.length][grid[0].length]; 
+		boolean[][] visited = new boolean[grid.length][grid[0].length];
+		visited[start.p.y][start.p.x] = true;
+
+		while (!queue.isEmpty() && !goalArea.isEmpty()) {
+			current = queue.poll();
+
+			totalNodesVisited[0]++;
+			//printGrid(start, goalArea, grid, visited, current);
+			
+			if (goalArea.contains(current.p)) {
+				goalArea.remove(current.p);
+				reachableGoals.add(current);
+				if (goalPreference == PathFind.GOAL_PREFERENCE_FIRST_FOUND) {
+					break;
+				} else	{
+					continue;
+				}
+			}
+
+			PointS[] neighs = current.getNeighboursFast(grid);
+			for (int i = 0; i < neighs.length; i++) {
+				if (neighs[i] != null) {
+					int neighX = neighs[i].p.x;
+					int neighY = neighs[i].p.y;
+					
+					int tentative_g_score = current.g + 1;
+					if (!visited[neighY][neighX]) {
+						//
+						// If there is a bulletGrid, use it to avoid bullets
+						//
+						if (bulletGrid != null && bulletGrid[neighY][neighX] <= tentative_g_score) {
+							continue;
+						}
+						neighs[i].g = tentative_g_score;
+						visited[neighY][neighX] = true;
+						came_from[neighY][neighX] = current;
+						queue.add(neighs[i]);
+					}
+				}
+			}
+		}
+
+		if (reachableGoals.size() != 0) {
+			//
+			// Get best goal			
+			//
+			int min = Integer.MAX_VALUE;
+			int minIdx = -1;
+			for (int i = 0; i < reachableGoals.size(); i++) {
+				if (goalPreference == PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET && goalCenter != null) {
+					if (Util.mDist(reachableGoals.get(i).p, goalCenter) < min) {
+						min = Util.mDist(reachableGoals.get(i).p, goalCenter);
+						minIdx = i;
+					}
+				} else if (goalPreference == PathFind.GOAL_PREFERENCE_CLOSEST_TO_START) {
+					if (Util.mDist(reachableGoals.get(i).p, start.p) < min) {
+						min = Util.mDist(reachableGoals.get(i).p, start.p);
+						minIdx = i;
+					}
+				} else if (goalPreference == PathFind.GOAL_PREFERENCE_FIRST_FOUND) {
+					minIdx = i;
+				}
+			}
+			PointS bestGoal = reachableGoals.get(minIdx);
+			
+			if ((ticksUntilBulletHit != null) && (bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g < ticksUntilBulletHit[0])) {
+				ticksUntilBulletHit[0] = bulletGrid[bestGoal.p.y][bestGoal.p.x] - bestGoal.g;
+			}
+
+			shortestPath.add(bestGoal);
+			PointS prev = came_from[bestGoal.p.y][bestGoal.p.x];
+			while (!prev.equals(start)) {
+				if ((ticksUntilBulletHit != null) && (bulletGrid[prev.p.y][prev.p.x] - prev.g < ticksUntilBulletHit[0])) {
+					ticksUntilBulletHit[0] = bulletGrid[prev.p.y][prev.p.x] - prev.g;
+				}
+				shortestPath.add(prev);
+				prev = came_from[prev.p.y][prev.p.x];
+			}
+			
+			if ((ticksUntilBulletHit != null) && (bulletGrid[start.p.y][start.p.x] - start.g < ticksUntilBulletHit[0])) {
+				ticksUntilBulletHit[0] = bulletGrid[start.p.y][start.p.x] - start.g;
+			}
+			
+			Collections.reverse(shortestPath);
+			return shortestPath;
+		} else {
+			return new ArrayList<PointS>();
+		}
+
+	}
 
 
 	public static class PointS {
@@ -292,6 +403,7 @@ public class PathFind {
 			this.g = steps;
 			this.direction = direction;
 		}
+
 		public Point getP() {
 			return p;
 		}
@@ -422,6 +534,83 @@ public class PathFind {
 			
 			return neighs;
 		}
+		
+		public PointS[] getNeighboursFast(boolean[][] grid) {
+			//ArrayList<PointS> neighs = new ArrayList<PointS>();
+			PointS[] neighs = new PointS[4];
+			
+			//Point centerP = new Point(this.p.x - 2, this.p.y - 2);
+
+			int centerX = this.p.x - 2;
+			int centerY = this.p.y - 2;
+			
+			if (centerX < 0 || centerY < 0) {
+				return neighs;
+			}
+			
+			// constants
+			final int tankSize = 5;
+			
+			int x = 0;
+			int y = 0;
+		
+			//ArrayList<Integer> moves = new ArrayList<Integer>();
+			//Point newP;
+			//newP = new Point(centerX, centerY + tankSize);
+			x = centerX;
+			y = centerY + tankSize;
+			if (y < grid.length
+					&& !grid[y][x]
+					&& !grid[y][x+1]
+					&& !grid[y][x+2]
+					&& !grid[y][x+3]
+					&& !grid[y][x+4]) {
+				neighs[0] = new PointS(centerX + 2, centerY + 3, this.g, 'X');
+			}
+			
+			y = centerY-1;
+			if (y >= 0
+					&& !grid[y][x]
+					&& !grid[y][x+1]
+					&& !grid[y][x+2]
+					&& !grid[y][x+3]
+					&& !grid[y][x+4]) {
+				neighs[1] = new PointS(centerX + 2, centerY + 1, this.g, 'X');
+			}
+			
+			x = centerX + tankSize;
+			y = centerY;
+			if (x < grid[0].length
+					&& !grid[y][x]
+					&& !grid[y+1][x]
+					&& !grid[y+2][x]
+					&& !grid[y+3][x]
+					&& !grid[y+4][x]) {
+				neighs[2] = new PointS(centerX + 3, centerY + 2, this.g, 'X');
+			}
+			
+			x = centerX-1;
+			y = centerY;
+			if (x >= 0
+					&& !grid[y][x]
+					&& !grid[y+1][x]
+					&& !grid[y+2][x]
+					&& !grid[y+3][x]
+					&& !grid[y+4][x]) {
+				neighs[3] = new PointS(centerX + 1, centerY + 2, this.g, 'X');
+			}
+			
+//			ArrayList<Point> points = new ArrayList<Point>();//new gameState.getNaiveTankMovesPoint(tankEdge);
+//			for (Integer integer : moves) {
+//				points.add(Util.movePoint(centerP, integer));
+//			}
+//			
+//			for (Point point : points) {
+//				neighs.add(new PointS(point.x + 2, point.y + 2, this.g, 'X'));
+//			}
+
+			return neighs;
+		}
 
 //		public ArrayList<PointS> getNeighbours() {	
 //			ArrayList<PointS> neighs = new  ArrayList<PointS>();
@@ -462,6 +651,23 @@ public class PathFind {
 				return 1;
 			}
 			return 0;
+		}
+	}
+	
+	public static class PointSFast extends PointS {
+		private int age;
+		
+		public PointSFast(int X, int Y, int steps, char direction) {
+			super(X, Y, steps, direction);
+			this.age = 0;
+		}
+		
+		public void incrementAge() {
+			this.age++;
+		}
+		
+		public int getAge() {
+			return this.age;
 		}
 	}
 //

@@ -472,6 +472,7 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
 							//"za.co.entelect.competition.bots.Endgame",
 							"za.co.entelect.competition.bots.Random",
+							//"za.co.entelect.competition.bots.Brute",
 							"za.co.entelect.competition.bots.BruteV2",
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
@@ -599,6 +600,7 @@ public class ImageDrawingApplet extends JApplet {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			
 		}
 
 		//long timeLeft = (sleepTime*1000000 - (System.nanoTime() - stateTimeNS))/1000000 - 100;

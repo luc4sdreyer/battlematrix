@@ -56,10 +56,17 @@ public class GameState {
 	
 	public static final int MAP_TYPE_UNKNOWN = 0;
 	public static final int MAP_TYPE_E0 = 1;
+	public static final int MAP_TYPE_E1 = 2;
+	public static final int MAP_TYPE_E2 = 3;
+	public static final int MAP_TYPE_E3 = 4;
+	public static final int MAP_TYPE_E4 = 5;
+	public static final int MAP_TYPE_E5 = 6;
+	public static final int MAP_TYPE_E6 = 7;
+	public static final int MAP_TYPE_E7 = 8;
 	
 	public final static int tankSize = 5;
 	//TODO: Set to final maxTurns
-	public static int maxTurns = 500;
+	public static int maxTurns = 200;
 	public final static int maxNumBlocks = 10000;
 	
 	private int[][] map;
@@ -1624,10 +1631,24 @@ public class GameState {
 	public static int identifyMapType(int[][] unknownMap) {
 		String[] maps = {
 			"mapE1.txt",
+			"mapE2.txt",
+			"mapE3.txt",
+			"mapE4.txt",
+			"mapE5.txt",
+			"mapE6.txt",
+			"mapE7.txt",
+			"mapE8.txt",
 		};
 		
 		int[] mapTypes = {
 			GameState.MAP_TYPE_E0,
+			GameState.MAP_TYPE_E1,
+			GameState.MAP_TYPE_E2,
+			GameState.MAP_TYPE_E3,
+			GameState.MAP_TYPE_E4,
+			GameState.MAP_TYPE_E5,
+			GameState.MAP_TYPE_E6,
+			GameState.MAP_TYPE_E7,
 		};
 		
 		for (int i = 0; i < maps.length; i++) {

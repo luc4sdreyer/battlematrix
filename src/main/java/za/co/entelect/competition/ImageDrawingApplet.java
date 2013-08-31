@@ -467,23 +467,23 @@ public class ImageDrawingApplet extends JApplet {
 		ArrayList<String> gameList = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0, 92555845741342L).toStringList();
 		
 		mainGUI.game = new Game(
-							//"za.co.entelect.competition.bots.Random",
-							//"za.co.entelect.competition.bots.Minimax",
-							//"za.co.entelect.competition.bots.MinimaxFixedDepth2",
-							//"za.co.entelect.competition.bots.Endgame",
 							"za.co.entelect.competition.bots.Random",
+							//"za.co.entelect.competition.bots.Minimax",
+							//"za.co.entelect.competition.bots.MinimaxFixedDepth4",
+							//"za.co.entelect.competition.bots.Endgame",
+							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Brute",
 							"za.co.entelect.competition.bots.BruteV2",
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
 							//"map.txt",
-							"mapE1_0.txt",
+							"mapE2.txt",
 							//"mapBattle0.txt",
 							//gameState,
 							//gameList,
 							false);
 		//mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
-		//GameState.maxTurns = 100;
+		GameState.maxTurns = 200;
 		
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);
@@ -496,6 +496,7 @@ public class ImageDrawingApplet extends JApplet {
 		f.setVisible(true);
 		
 		mainGUI.moveList = loadMoveList();
+		mainGUI.moveList = null;
 		
 		mainGUI.setPreviousGameState(mainGUI.game.getGameState().clone());
 		mainGUI.setCurrentGameState(mainGUI.game.getGameState().clone());

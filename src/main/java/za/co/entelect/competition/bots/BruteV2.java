@@ -85,6 +85,7 @@ public class BruteV2 extends Bot {
 			//
 			for (int tankIdx = 2 * getPlayerIndex(); tankIdx < 2 * (getPlayerIndex()+1); tankIdx++) {
 				Tank me = gameState.getTanks()[tankIdx];
+				int searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_START;
 				int gameActionIdx = tankIdx - 2 * getPlayerIndex();
 				
 				if (!me.isAlive()) {
@@ -128,6 +129,7 @@ public class BruteV2 extends Bot {
 					if (target == null) {
 						target = gameState.getBases()[enemyIndex].getPosition();
 						targetRadius = 0;
+						searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
 					}
 				} else {
 					if (gameState.getMapType() == GameState.MAP_TYPE_E0) {
@@ -178,6 +180,7 @@ public class BruteV2 extends Bot {
 					if (target == null) {
 						target = gameState.getBases()[enemyIndex].getPosition();
 						targetRadius = 0;
+						searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
 					}
 				}
 	
@@ -285,8 +288,8 @@ public class BruteV2 extends Bot {
 						numSearches++;
 						int[] totalNodesVisited = new int[1];
 						long tempTime = System.nanoTime();
-						path = PathFind.BFSFinderFast(start, goalArea, null, grid, totalNodesVisited,
-								PathFind.GOAL_PREFERENCE_CLOSEST_TO_START, bulletGrid, ticksUntilBulletHit, came_from);
+						path = PathFind.BFSFinderFast(start, goalArea, target, grid, totalNodesVisited,
+								searchPreference, bulletGrid, ticksUntilBulletHit, came_from);
 						
 						tempTime = System.nanoTime() - tempTime;
 						searchTime += tempTime;						

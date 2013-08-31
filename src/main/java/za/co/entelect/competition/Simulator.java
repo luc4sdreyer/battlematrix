@@ -21,7 +21,7 @@ public class Simulator implements Runnable {
 	public static final boolean dbMode = false;
 	public static boolean saveGamesWhereP1Loses = false;
 	public static boolean saveGamesWhereP2Loses = false;
-	public static boolean saveGamesWhereDraws = true;
+	public static boolean saveGamesWhereDraws = false;
 	public static final int numThreads = 5;
 	public static Connection connection = null;
 	
@@ -50,7 +50,7 @@ public class Simulator implements Runnable {
 		this.game.getGameState().setMapType();
 		//this.game.getGameState().setDebugMode(true);
 		//this.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
-		//GameState.maxTurns = 50;
+		//GameState.maxTurns = 200;
 		
 		if (saveGamesWhereP1Loses || saveGamesWhereP2Loses || saveGamesWhereDraws) {
 			this.game.getGameState().setDebugMode(true);
@@ -142,7 +142,7 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 1000;
+				numTests = 10;
 			}
 			long time = System.nanoTime();
 
@@ -197,11 +197,11 @@ public class Simulator implements Runnable {
 			moveList = null;
 
 			String bot1 =
-					"za.co.entelect.competition.bots.Random"
+					//"za.co.entelect.competition.bots.Random"
 					//"za.co.entelect.competition.bots.Endgame"
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
-					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
+					"za.co.entelect.competition.bots.MinimaxFixedDepth4"
 					//"za.co.entelect.competition.bots.MCTS"
 					//"za.co.entelect.competition.bots.Brute"
 					//"za.co.entelect.competition.bots.BruteV2"

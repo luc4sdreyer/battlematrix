@@ -133,7 +133,7 @@ public class Simulator implements Runnable {
 				System.out.println("Failed to make connection!");
 			}
 		} else {
-			numSims = 5;
+			numSims = 8;
 		}
 
 
@@ -142,7 +142,7 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 10;
+				numTests = 1000;
 			}
 			long time = System.nanoTime();
 
@@ -158,8 +158,8 @@ public class Simulator implements Runnable {
 			} else {
 				String mapName = null;
 				//mapName = "mapE1_3.txt";
-				mapName = "mapE1_" + (j%4) + ".txt";
-				//mapName = "mapE1_0.txt";
+				//mapName = "mapE1_" + (j%4) + ".txt";
+				mapName = "mapE" + (j%8 + 1) + ".txt";
 				//mapName = "mapBattle" + (j%3) + ".txt";
 				gameFile = Game.readGameFromFile(mapName);
 				
@@ -197,11 +197,11 @@ public class Simulator implements Runnable {
 			moveList = null;
 
 			String bot1 =
-					//"za.co.entelect.competition.bots.Random"
+					"za.co.entelect.competition.bots.Random"
 					//"za.co.entelect.competition.bots.Endgame"
 					//"za.co.entelect.competition.bots.Minimax"
 					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
-					"za.co.entelect.competition.bots.MinimaxFixedDepth4"
+					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
 					//"za.co.entelect.competition.bots.MCTS"
 					//"za.co.entelect.competition.bots.Brute"
 					//"za.co.entelect.competition.bots.BruteV2"

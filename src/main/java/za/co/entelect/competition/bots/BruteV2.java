@@ -95,11 +95,129 @@ public class BruteV2 extends Bot {
 				Point target = null;
 				int targetRadius = -1000000000;
 				int maxDistanceFromTarget = 1000000000;
+				boolean moveCloserToTarget = false;
+				
+				//
+				// Instructions for Tank 1
+				//
 				if ((!swapMyTanks && tankIdx % 2 == 0) || (swapMyTanks && tankIdx % 2 == 1)) {
 					if (gameState.getMapType() == GameState.MAP_TYPE_E0) {
 						if (map[40][15] == Unit.WALL) {
 							target = new Point(15,40);
 							targetRadius = 0;
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E1) {
+						int targetX = 10;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length/2; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 2;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length-1 ; y >= map.length/2; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 2;
+									break;
+								}
+							}
+						}
+						
+						if (target == null) {
+							target = gameState.getBases()[enemyIndex].getPosition();
+							targetRadius = 0;
+							searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E2) {
+						int targetX = 20;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E3) {
+						int targetX = 16;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E4) {
+						int targetX = 21;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E5) {
+						int targetX = 0;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								targetX = 32 - Math.abs(10 - (y-9)/3);
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								targetX = 32 - Math.abs(10 - (y-9)/3);
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
 						}
 					}
 					
@@ -131,12 +249,16 @@ public class BruteV2 extends Bot {
 						targetRadius = 0;
 						searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
 					}
+				//
+				// Instructions for Tank 2
+				//
 				} else {
 					if (gameState.getMapType() == GameState.MAP_TYPE_E0) {
+						int targetX = 56;
 						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
 							for (int y = 0 ; y < map.length; y++) {
-								if (map[y][56] == Unit.WALL) {
-									target = new Point(56, y);
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
 									targetRadius = 0;
 									maxDistanceFromTarget = 4;
 									break;
@@ -144,10 +266,131 @@ public class BruteV2 extends Bot {
 							}
 						} else {
 							for (int y = map.length -1 ; y >= 0 ; y--) {
-								if (map[y][56] == Unit.WALL) {
-									target = new Point(56, y);
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
 									targetRadius = 0;
 									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E1) {
+						int targetX = 59;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length/2; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 2;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length-1 ; y >= map.length/2; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 2;
+									break;
+								}
+							}
+						}
+						
+						if (target == null) {
+							target = gameState.getBases()[enemyIndex].getPosition();
+							targetRadius = 0;
+							searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E2) {
+						int targetX = 60;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E3) {
+						int targetX = 64;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E4) {
+						int targetX = 60;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 0 ; y < map.length; y++) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+						}
+					} else if (gameState.getMapType() == GameState.MAP_TYPE_E5) {
+						int targetX = 40;
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							if (map[32][targetX] == Unit.WALL) {
+								target = new Point(targetX, 32);
+								targetRadius = 0;
+								searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_START;
+								moveCloserToTarget = true;
+							} else {
+								for (int y = 0 ; y < map.length; y++) {
+									if (map[y][targetX] == Unit.WALL) {
+										target = new Point(targetX, y);
+										targetRadius = 0;
+										//maxDistanceFromTarget = 4;
+										searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
+										moveCloserToTarget = true;
+										break;
+									}
+								}
+							}
+						} else {
+							for (int y = map.length -1 ; y >= 0 ; y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									//maxDistanceFromTarget = 4;
+									searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
 									break;
 								}
 							}
@@ -420,14 +663,8 @@ public class BruteV2 extends Bot {
 							}
 						}
 					}
-					if (getPlayerIndex() == 0) {
-						if (score > 0) {
-							shouldFire = true;
-						}
-					} else {
-						if (score < 0) {
-							shouldFire = true;
-						}
+					if (score > 0) {
+						shouldFire = true;
 					}
 				}
 				
@@ -450,7 +687,7 @@ public class BruteV2 extends Bot {
 							if (me.getRotation() == direction && !gameState.getBullets()[tankIdx].isAlive()) {						
 								gameActions[gameActionIdx] = GameAction.ACTION_FIRE;
 							} else {
-								if (me.getRotation() == direction) {
+								if (me.getRotation() == direction && !moveCloserToTarget) {
 									//
 									// This leads to a small improvement because it prevents the tank from being too close.
 									//

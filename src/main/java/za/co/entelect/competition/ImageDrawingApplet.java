@@ -477,13 +477,13 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
 							//"map.txt",
-							"mapE2.txt",
+							"mapE8.txt",
 							//"mapBattle0.txt",
 							//gameState,
 							//gameList,
 							false);
 		//mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
-		GameState.maxTurns = 200;
+		//GameState.maxTurns = 200;
 		
 //		gameState.getTanks()[1].setAlive(false);
 //		gameState.getTanks()[2].setAlive(false);

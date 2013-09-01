@@ -31,11 +31,11 @@ public class App
 		String myName = new String();
 		
 		try {
-			//load a properties file
 			prop.load(new FileInputStream(propertiesFile));
-
-			//get the property value and print it out
 			playStyle = prop.getProperty("playStyle");
+			if (prop.getProperty("myName") != null) {
+				myName = prop.getProperty("myName");
+			}
 			
 			System.out.println("playStyle=" + playStyle);
 		} catch (IOException ex) {
@@ -47,7 +47,9 @@ public class App
 			endPoint = args[0];
 		} else if (args.length == 2) {
 			endPoint = args[0];
-			myName = args[1];
+			if (myName.equals("")) {
+				myName = args[1];
+			}
 		}
 		System.out.println("Connecting to: " + endPoint);
 		System.out.println("myName: " + myName);

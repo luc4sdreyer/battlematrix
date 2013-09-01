@@ -5,10 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
-import org.datacontract.schemas._2004._07.RoTeD_BattleCity_Library.Actions;
-import org.datacontract.schemas._2004._07.RoTeD_BattleCity_Library.GameInfoTickBoard;
-
-
 import za.co.entelect.challenge.Action;
 
 
@@ -423,16 +419,6 @@ public class GameState {
 		ArrayList<Collision> newCollisions = new ArrayList<Collision>();
 		return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, eGame.getCurrentTick());
 	}
-	public static GameState fromRGame(GameInfoTickBoard rGame) {
-//		Tank[] newTanks = new Tank[4];
-//		Base[] newBases = new Base[2];
-//		Bullet[] newBullets = new Bullet[4];
-//		
-//		Board rBoard = rGame.getTickBoard();
-//		int[][] newMap = new int[rBoard.getBoardStates().length][rBoard.getBoardStates()[0].length];
-//		
-		return null;
-	}
 	public static za.co.entelect.challenge.Action XActionToEAction(int xAction) {
 		Action eAction = null;
 		switch (xAction) {
@@ -444,18 +430,6 @@ public class GameState {
 			case GameAction.ACTION_NONE:	eAction = Action.NONE;	break;
 		}
 		return eAction;
-	}
-	public static Actions XActionToRAction(int xAction) {
-		Actions rAction = null;
-		switch (xAction) {
-			case GameAction.ACTION_MOVE_NORTH:	rAction = Actions.UP;		break;
-			case GameAction.ACTION_MOVE_EAST:	rAction = Actions.RIGHT;	break;
-			case GameAction.ACTION_MOVE_SOUTH:	rAction = Actions.DOWN;		break;
-			case GameAction.ACTION_MOVE_WEST:	rAction = Actions.LEFT;		break;
-			case GameAction.ACTION_FIRE:	rAction = Actions.FIRE;	break;
-			case GameAction.ACTION_NONE:	rAction = Actions.NONE;	break;
-		}
-		return rAction;
 	}
 	public static int EDirectionToXRotation(za.co.entelect.challenge.Direction eDirection) {
 		int rotation = -1;

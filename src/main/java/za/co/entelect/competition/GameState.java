@@ -276,8 +276,7 @@ public class GameState {
 	public static GameState fromEGame(za.co.entelect.challenge.Game eGame, za.co.entelect.challenge.State[][] eStateGrid, 
 			HashMap<Integer, Integer> eBullets, String myName, int[] playerIdxHolder, GameState prevXGameState) {
 		if (eGame.getPlayers().length != 2) {
-			System.err.println("eGame.getPlayers().length != 2");
-			return null;
+			System.err.println("FATAL ERROR: eGame.getPlayers().length != 2");
 		}
 		
 		Tank[] newTanks = new Tank[4];
@@ -303,8 +302,7 @@ public class GameState {
 			za.co.entelect.challenge.Unit eUnits[] = ePlayer.getUnits();			
 			if (eUnits != null) {
 				if (eUnits.length > 2) {
-					System.err.println("eUnits.length > 2");
-					return null;
+					System.err.println("FATAL ERROR: eUnits.length > 2");					
 				}				
 				
 				for (int j = 0; j < eUnits.length; j++) {
@@ -342,7 +340,7 @@ public class GameState {
 				if (prevXGameState == null) {
 					//TODO: Return null;
 					System.err.println("FATAL ERROR: Bullets cannot exist on the first round!");
-					return null;
+					continue;
 				} else {
 					Point bulletPosition = new Point(eBulletsTemp.get(i).getX(),eBulletsTemp.get(i).getY());
 					int oppositeOfBulletRotation = (EDirectionToXRotation(eBulletsTemp.get(i).getDirection()) + 2) % 4;
@@ -354,7 +352,7 @@ public class GameState {
 						System.err.println("FATAL ERROR: Bullet(" + eBulletsTemp.get(i).getX() + ", " + eBulletsTemp.get(i).getY() 
 								+ ", " + EDirectionToXRotation(eBulletsTemp.get(i).getDirection()) + ") was not fired by tank at (" 
 								+ bulletPosition.x + ", " + bulletPosition.y + ")! unitCode: " + unitCode);
-						return null;
+						continue;
 					}
 				}
 			}
@@ -373,10 +371,12 @@ public class GameState {
 					newMap[y][x] = Unit.WALL;
 				} else if (eStateGrid[x][y].getValue().equals(za.co.entelect.challenge.State._EMPTY)) {
 					newMap[y][x] = Unit.EMPTY;
+				} else if (eStateGrid[x][y].getValue().equals(za.co.entelect.challenge.State._OUT_OF_BOUNDS)) {
+					newMap[y][x] = Unit.WALL;
 				} else {
-					System.err.println("eStateGrid[" + x + "][" + y + "] is unknown: " + eStateGrid[x][y].getValue());
+					System.err.println("FATAL ERROR: eStateGrid[" + x + "][" + y + "] is unknown: " + eStateGrid[x][y].getValue());
 					//TODO: Return NULL here.
-					return null;
+					continue;
 				}
 			}
 		}		
@@ -401,6 +401,13 @@ public class GameState {
 			}
 			for (int y2 = 0; y2 < GameState.tankSize; y2++) {
 				for (int x2 = 0; x2 < GameState.tankSize; x2++) {
+					if (newMap[t.getPosition().y+y2][t.getPosition().x+x2] != Unit.EMPTY) {
+						t.setAlive(false);
+						y2 = GameState.tankSize;
+						System.err.println("Tank " + i + " has been killed because it is not on EMPTY cells at (" 
+								+ t.getPosition().x+x2 + "," + t.getPosition().y+y2 + ").");
+						break;
+					}
 					newMap[t.getPosition().y+y2][t.getPosition().x+x2] = Unit.TANK1A+i;
 				}
 			}

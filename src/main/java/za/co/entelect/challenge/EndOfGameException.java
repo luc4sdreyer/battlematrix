@@ -8,7 +8,58 @@
 package za.co.entelect.challenge;
 
 public class EndOfGameException  extends org.apache.axis.AxisFault  implements java.io.Serializable {
+    private java.lang.String loser;
+
+    private java.lang.String message1;
+
     public EndOfGameException() {
+    }
+
+    public EndOfGameException(
+           java.lang.String loser,
+           java.lang.String message1) {
+        this.loser = loser;
+        this.message1 = message1;
+    }
+
+
+    /**
+     * Gets the loser value for this EndOfGameException.
+     * 
+     * @return loser
+     */
+    public java.lang.String getLoser() {
+        return loser;
+    }
+
+
+    /**
+     * Sets the loser value for this EndOfGameException.
+     * 
+     * @param loser
+     */
+    public void setLoser(java.lang.String loser) {
+        this.loser = loser;
+    }
+
+
+    /**
+     * Gets the message1 value for this EndOfGameException.
+     * 
+     * @return message1
+     */
+    public java.lang.String getMessage1() {
+        return message1;
+    }
+
+
+    /**
+     * Sets the message1 value for this EndOfGameException.
+     * 
+     * @param message1
+     */
+    public void setMessage1(java.lang.String message1) {
+        this.message1 = message1;
     }
 
     private java.lang.Object __equalsCalc = null;
@@ -22,7 +73,13 @@ public class EndOfGameException  extends org.apache.axis.AxisFault  implements j
         }
         __equalsCalc = obj;
         boolean _equals;
-        _equals = true;
+        _equals = true && 
+            ((this.loser==null && other.getLoser()==null) || 
+             (this.loser!=null &&
+              this.loser.equals(other.getLoser()))) &&
+            ((this.message1==null && other.getMessage1()==null) || 
+             (this.message1!=null &&
+              this.message1.equals(other.getMessage1())));
         __equalsCalc = null;
         return _equals;
     }
@@ -34,6 +91,12 @@ public class EndOfGameException  extends org.apache.axis.AxisFault  implements j
         }
         __hashCodeCalc = true;
         int _hashCode = 1;
+        if (getLoser() != null) {
+            _hashCode += getLoser().hashCode();
+        }
+        if (getMessage1() != null) {
+            _hashCode += getMessage1().hashCode();
+        }
         __hashCodeCalc = false;
         return _hashCode;
     }
@@ -44,6 +107,20 @@ public class EndOfGameException  extends org.apache.axis.AxisFault  implements j
 
     static {
         typeDesc.setXmlType(new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "EndOfGameException"));
+        org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("loser");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "loser"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
+        elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("message1");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "message"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
     }
 
     /**

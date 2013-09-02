@@ -8,7 +8,34 @@
 package za.co.entelect.challenge;
 
 public class NoBlameException  extends org.apache.axis.AxisFault  implements java.io.Serializable {
+    private java.lang.String message1;
+
     public NoBlameException() {
+    }
+
+    public NoBlameException(
+           java.lang.String message1) {
+        this.message1 = message1;
+    }
+
+
+    /**
+     * Gets the message1 value for this NoBlameException.
+     * 
+     * @return message1
+     */
+    public java.lang.String getMessage1() {
+        return message1;
+    }
+
+
+    /**
+     * Sets the message1 value for this NoBlameException.
+     * 
+     * @param message1
+     */
+    public void setMessage1(java.lang.String message1) {
+        this.message1 = message1;
     }
 
     private java.lang.Object __equalsCalc = null;
@@ -22,7 +49,10 @@ public class NoBlameException  extends org.apache.axis.AxisFault  implements jav
         }
         __equalsCalc = obj;
         boolean _equals;
-        _equals = true;
+        _equals = true && 
+            ((this.message1==null && other.getMessage1()==null) || 
+             (this.message1!=null &&
+              this.message1.equals(other.getMessage1())));
         __equalsCalc = null;
         return _equals;
     }
@@ -34,6 +64,9 @@ public class NoBlameException  extends org.apache.axis.AxisFault  implements jav
         }
         __hashCodeCalc = true;
         int _hashCode = 1;
+        if (getMessage1() != null) {
+            _hashCode += getMessage1().hashCode();
+        }
         __hashCodeCalc = false;
         return _hashCode;
     }
@@ -44,6 +77,13 @@ public class NoBlameException  extends org.apache.axis.AxisFault  implements jav
 
     static {
         typeDesc.setXmlType(new javax.xml.namespace.QName("http://challenge.entelect.co.za/", "NoBlameException"));
+        org.apache.axis.description.ElementDesc elemField = new org.apache.axis.description.ElementDesc();
+        elemField.setFieldName("message1");
+        elemField.setXmlName(new javax.xml.namespace.QName("", "message"));
+        elemField.setXmlType(new javax.xml.namespace.QName("http://www.w3.org/2001/XMLSchema", "string"));
+        elemField.setMinOccurs(0);
+        elemField.setNillable(false);
+        typeDesc.addFieldDesc(elemField);
     }
 
     /**

@@ -1,3 +1,5 @@
+rmdir /S /Q export
+
 xcopy /Y assets\*.txt export\assets\ /E
 xcopy /Y src export\src\ /E
 

@@ -22,7 +22,7 @@ public class ChallengeServiceLocator extends org.apache.axis.client.Service impl
     }
 
     // Use to get a proxy class for ChallengePort
-    private java.lang.String ChallengePort_address = "http://localhost:9090/ChallengePort";
+    private java.lang.String ChallengePort_address = "http://localhost:7070/Challenge/ChallengeService";
 
     public java.lang.String getChallengePortAddress() {
         return ChallengePort_address;
@@ -52,7 +52,7 @@ public class ChallengeServiceLocator extends org.apache.axis.client.Service impl
 
     public za.co.entelect.challenge.Challenge getChallengePort(java.net.URL portAddress) throws javax.xml.rpc.ServiceException {
         try {
-            za.co.entelect.challenge.ChallengeServiceSoapBindingStub _stub = new za.co.entelect.challenge.ChallengeServiceSoapBindingStub(portAddress, this);
+            za.co.entelect.challenge.ChallengePortBindingStub _stub = new za.co.entelect.challenge.ChallengePortBindingStub(portAddress, this);
             _stub.setPortName(getChallengePortWSDDServiceName());
             return _stub;
         }
@@ -73,7 +73,7 @@ public class ChallengeServiceLocator extends org.apache.axis.client.Service impl
     public java.rmi.Remote getPort(Class serviceEndpointInterface) throws javax.xml.rpc.ServiceException {
         try {
             if (za.co.entelect.challenge.Challenge.class.isAssignableFrom(serviceEndpointInterface)) {
-                za.co.entelect.challenge.ChallengeServiceSoapBindingStub _stub = new za.co.entelect.challenge.ChallengeServiceSoapBindingStub(new java.net.URL(ChallengePort_address), this);
+                za.co.entelect.challenge.ChallengePortBindingStub _stub = new za.co.entelect.challenge.ChallengePortBindingStub(new java.net.URL(ChallengePort_address), this);
                 _stub.setPortName(getChallengePortWSDDServiceName());
                 return _stub;
             }

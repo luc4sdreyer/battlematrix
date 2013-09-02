@@ -389,7 +389,12 @@ public class GameState {
 			if (!b.isAlive()) {
 				continue;
 			}
-			newMap[b.getPosition().y][b.getPosition().x] = Unit.BASE1+i;
+			if (GameState.isInMap(b.getPosition(), newMap)) {
+				newMap[b.getPosition().y][b.getPosition().x] = Unit.BASE1+i;
+			} else {
+				System.err.println("FATAL ERROR: The point (" + b.getPosition().x + "," + b.getPosition().y + ") where Base " + i + " should be placed is outside the map.");
+				b.setAlive(false);
+			}			
 		}
 		for (int i = 0; i < newTanks.length; i++) {
 			if (newTanks[i] == null) {
@@ -401,14 +406,21 @@ public class GameState {
 			}
 			for (int y2 = 0; y2 < GameState.tankSize; y2++) {
 				for (int x2 = 0; x2 < GameState.tankSize; x2++) {
-					if (newMap[t.getPosition().y+y2][t.getPosition().x+x2] != Unit.EMPTY) {
+					Point nextPoint = new Point(t.getPosition().x+x2, t.getPosition().y+y2);
+					if (!GameState.isInMap(nextPoint, newMap)) {
+						t.setAlive(false);
+						y2 = GameState.tankSize;
+						System.err.println("FATAL ERROR: The point (" + nextPoint.x + "," + nextPoint.y + ") where Tank " + i + " should be placed is outside the map.");
+						break;
+					}
+					if (newMap[nextPoint.y][nextPoint.x] != Unit.EMPTY) {
 						t.setAlive(false);
 						y2 = GameState.tankSize;
 						System.err.println("Tank " + i + " has been killed because it is not on EMPTY cells at (" 
-								+ t.getPosition().x+x2 + "," + t.getPosition().y+y2 + ").");
+								+ nextPoint.x + "," + nextPoint.y + ").");
 						break;
 					}
-					newMap[t.getPosition().y+y2][t.getPosition().x+x2] = Unit.TANK1A+i;
+					newMap[nextPoint.y][nextPoint.x] = Unit.TANK1A+i;
 				}
 			}
 		}
@@ -420,7 +432,12 @@ public class GameState {
 			if (!b.isAlive()) {
 				continue;
 			}
-			newMap[b.getPosition().y][b.getPosition().x] = Unit.BULLET_TANK1A+i;
+			if (GameState.isInMap(b.getPosition(), newMap)) {
+				newMap[b.getPosition().y][b.getPosition().x] = Unit.BULLET_TANK1A+i;
+			} else {
+				System.err.println("FATAL ERROR: The point (" + b.getPosition().x + "," + b.getPosition().y + ") where Bullet " + i + " should be placed is outside the map.");
+				b.setAlive(false);
+			}
 		}
 		
 		ArrayList<Collision> newCollisions = new ArrayList<Collision>();
@@ -640,6 +657,16 @@ public class GameState {
 		if ((p.x < this.map[0].length)
 				&& (p.x >= 0)
 				&& (p.y < this.map.length)
+				&& (p.y >= 0)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public static boolean isInMap(Point p, int[][] map) {
+		if ((p.x < map[0].length)
+				&& (p.x >= 0)
+				&& (p.y < map.length)
 				&& (p.y >= 0)) {
 			return true;
 		} else {

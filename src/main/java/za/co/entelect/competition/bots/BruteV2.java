@@ -43,14 +43,24 @@ public class BruteV2 extends Bot {
 	private int numSearchRequests = 0;
 	private int numSearches = 0;
 	
-	private static final boolean printGoalArea = false;
-	private static final boolean printBulletGrid = false;
-	private static final boolean printExtraOutput = false;
+	private static boolean printGoalArea = false;
+	private static boolean printBulletGrid = false;
+	private static boolean printExtraOutput = false;
 
 	public BruteV2(int playerIndex) {
 		super(playerIndex);
 	}
-
+	
+	public static void setPrintGoalArea(boolean printGoalArea) {
+		BruteV2.printGoalArea = printGoalArea;
+	}
+	public static void setPrintBulletGrid(boolean printBulletGrid) {
+		BruteV2.printBulletGrid = printBulletGrid;
+	}
+	public static void setPrintExtraOutput(boolean printExtraOutput) {
+		BruteV2.printExtraOutput = printExtraOutput;
+	}
+	
 	@Override
 	public int[] getActions(GameState originalGameState, int timeLimitMS) {
 		long totalTime = System.nanoTime();

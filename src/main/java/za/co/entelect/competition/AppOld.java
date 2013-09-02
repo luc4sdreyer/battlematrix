@@ -48,13 +48,13 @@ public class AppOld
 			}
 		}
 		
-		ChallengeServiceSoapBindingStub service = null;
+		ChallengePortBindingStub service = null;
 		try {
 			//java.net.URL url = new java.net.URL("http://localhost:9090/ChallengePort");
 			//java.net.URL url = new java.net.URL("http://localhost:8080/Axis2WSTest/services/ChallengeService");
 			java.net.URL url = new java.net.URL("http://ec2-176-34-161-166.eu-west-1.compute.amazonaws.com/BattleCity/WebService/BasicGameHost.svc");
 			
-			service = new ChallengeServiceSoapBindingStub(url, null);
+			service = new ChallengePortBindingStub(url, null);
 			service.setMaintainSession(true);
 		} catch (AxisFault e) {
 			e.printStackTrace();
@@ -64,7 +64,7 @@ public class AppOld
 
 		State[][] eStateGrid = null;
 		try {
-			eStateGrid = service.login();
+			eStateGrid = service.login().getStates();
 		} catch (NoBlameException e) {
 			e.printStackTrace();
 		} catch (EndOfGameException e) {

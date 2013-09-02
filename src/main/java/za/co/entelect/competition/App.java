@@ -15,6 +15,7 @@ import org.apache.axis.AxisFault;
 
 import za.co.entelect.challenge.*;
 import za.co.entelect.competition.bots.Bot;
+import za.co.entelect.competition.bots.BruteV2;
 import za.co.entelect.competition.bots.Random;
 
 /**
@@ -30,6 +31,8 @@ public class App
 		
 		String playStyle = new String();
 		String myName = new String();
+		boolean extraOutput = false;
+		
 		
 		try {
 			prop.load(new FileInputStream(propertiesFile));
@@ -37,6 +40,7 @@ public class App
 			if (prop.getProperty("myName") != null) {
 				myName = prop.getProperty("myName");
 			}
+			extraOutput = Boolean.parseBoolean(prop.getProperty("myName"));
 			
 			System.out.println("playStyle=" + playStyle);
 		} catch (IOException ex) {
@@ -63,6 +67,9 @@ public class App
 			} else if (playStyle.equals("BruteV2")) {
 				Constructor<?> player1Constructor = Class.forName("za.co.entelect.competition.bots.BruteV2").getConstructor(Integer.TYPE);				
 				stupidBot = (Bot) player1Constructor.newInstance(0);
+				BruteV2.setPrintBulletGrid(extraOutput);
+				BruteV2.setPrintExtraOutput(extraOutput);
+				BruteV2.setPrintGoalArea(extraOutput);
 			} else if (playStyle.equals("Random")) {
 				Constructor<?> player1Constructor = Class.forName("za.co.entelect.competition.bots.Random").getConstructor(Integer.TYPE);				
 				stupidBot = (Bot) player1Constructor.newInstance(0);
@@ -91,20 +98,21 @@ public class App
 		try {
 			java.net.URL url = new java.net.URL(endPoint);
 
-			service = new ChallengeServiceSoapBindingStub(url, null);
+			service = new ChallengePortBindingStub(url, null);
 		} catch (AxisFault e) {
 			e.printStackTrace();
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
 
+		Board eBoard = null;
 		State[][] eStateGrid = null;
 		HashMap<Integer, Integer> eBullets = new HashMap<Integer, Integer>();
 		GameState xGameState = null;
 		GameState prevXGameState = null;
 		
 		try {
-			eStateGrid = service.login();
+			eBoard = service.login();
 		} catch (NoBlameException e) {
 			e.printStackTrace();
 		} catch (EndOfGameException e) {
@@ -112,12 +120,15 @@ public class App
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
+		eStateGrid = eBoard.getStates();
 		//		catch (java.net.ConnectException e) {
 		//			System.out.println("Could not connect");
 		//		}
 
 		int prevTick = -1;
 		int mapType = -1;
+		long startTime = 0;
+		long MillisecondsToNextTick = 0;
 
 		while (true) {            
 			za.co.entelect.challenge.Game eGame = null;
@@ -172,7 +183,8 @@ public class App
 					}
 				}
 			}
-
+			startTime = Calendar.getInstance().getTimeInMillis();
+			MillisecondsToNextTick = eGame.getMillisecondsToNextTick();
 			
 			
 			int[] playerIdxHolder = new int[1];
@@ -183,7 +195,7 @@ public class App
 			System.out.println("PlayerIdx: " + playerIdx);
 			
 			if (playerIdx == -1) {
-				System.err.println("CRITICAL ERROR: player index could not be found.");
+				System.err.println("FATAL ERROR: player index could not be found.");
 				playerIdx = 0;
 			}
 			stupidBot.setPlayerIndex(playerIdx);
@@ -194,8 +206,10 @@ public class App
 			}
 			xGameState.setMapType(mapType);
 			
-			System.out.println("Game state:");
-			System.out.println(xGameState.toString());
+			if (extraOutput) {
+				System.out.println("Game state:");
+				System.out.println(xGameState.toString());	
+			}
 
 			ArrayList<za.co.entelect.challenge.Action> actions = new ArrayList<za.co.entelect.challenge.Action>();			
 
@@ -253,6 +267,8 @@ public class App
 				}
 			}
 			System.out.println("numAliveTanks : "+numAliveTanks);
+			Delta d1 = null;
+			Delta d2 = null;
 			try {
 //				for (int i = 0; i < actions.size(); i++) {
 //					za.co.entelect.challenge.Action action = actions.get(i);
@@ -261,13 +277,11 @@ public class App
 //				}
 				if (xGameState.getTanks()[playerIdx*2 + 0].isAlive() && actions.size() > 0) {
 					System.out.println("T0 is doing: "+actions.get(0));
-					@SuppressWarnings("unused")
-					Delta d1 = service.setAction(xGameState.getTanks()[playerIdx*2 + 0].getID(), actions.get(0));
+					d1 = service.setAction(xGameState.getTanks()[playerIdx*2 + 0].getID(), actions.get(0));
 				}
 				if (xGameState.getTanks()[playerIdx*2 + 1].isAlive() && actions.size() > 1) {
 					System.out.println("T1 is doing: "+actions.get(1));
-					@SuppressWarnings("unused")
-					Delta d2 = service.setAction(xGameState.getTanks()[playerIdx*2 + 1].getID(), actions.get(1));
+					d2 = service.setAction(xGameState.getTanks()[playerIdx*2 + 1].getID(), actions.get(1));
 				}
 			} catch (EndOfGameException e) {
 				System.out.println("Game Over!");
@@ -287,15 +301,16 @@ public class App
 			}
 
 			long timeLeft = 0;
-			if (eGame.getNextTickTime() == null) {
-				System.err.println("CRITICAL SERVER ERROR: eGame.getNextTickTime() == null");
-				timeLeft = 0;
+			if (d2 != null) {
+				timeLeft = d2.getMillisecondsToNextTick();
+			} else if (d1 != null) {
+				timeLeft = d1.getMillisecondsToNextTick();
 			} else {
-				timeLeft = eGame.getMillisecondsToNextTick();
+				timeLeft = MillisecondsToNextTick - (Calendar.getInstance().getTimeInMillis() - startTime);
 			}
 			System.out.println("Time left: " + timeLeft + " ms");
 
-			if (timeLeft > 0) {
+			if (timeLeft > 20) {
 				try {
 					Thread.sleep((long) (timeLeft*0.9));
 				} catch (InterruptedException e) {

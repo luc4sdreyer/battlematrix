@@ -237,7 +237,7 @@ public class App
 			} else {
 				int[] gameActions = stupidBot.getActions(xGameState, 3000);
 				for (int i = 0; i < 2; i++) {
-					Tank tank = xGameState.getTanks()[i];
+					Tank tank = xGameState.getTanks()[playerIdx*2 + i];
 					if (!tank.isAlive()) {
 						continue;
 					}

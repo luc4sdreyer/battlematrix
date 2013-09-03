@@ -105,7 +105,7 @@ public class App
 			e.printStackTrace();
 		}
 
-		Board eBoard = null;
+		za.co.entelect.challenge.Board eBoard = null;
 		State[][] eStateGrid = null;
 		HashMap<Integer, Integer> eBullets = new HashMap<Integer, Integer>();
 		GameState xGameState = null;

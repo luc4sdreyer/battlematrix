@@ -210,21 +210,21 @@ public class BruteV2 extends Bot {
 						int targetX = 0;
 						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
 							for (int y = 0 ; y < map.length; y++) {
-								targetX = 32 - Math.abs(10 - (y-9)/3);
+								targetX = 33 - Math.abs(11 - (y-8)/3);
 								if (map[y][targetX] == Unit.WALL) {
 									target = new Point(targetX, y);
 									targetRadius = 0;
-									maxDistanceFromTarget = 4;
+									maxDistanceFromTarget = 6;
 									break;
 								}
 							}
 						} else {
 							for (int y = map.length -1 ; y >= 0 ; y--) {
-								targetX = 32 - Math.abs(10 - (y-9)/3);
+								targetX = 33 - Math.abs(11 - (y-8)/3);
 								if (map[y][targetX] == Unit.WALL) {
 									target = new Point(targetX, y);
 									targetRadius = 0;
-									maxDistanceFromTarget = 4;
+									maxDistanceFromTarget = 6;
 									break;
 								}
 							}
@@ -395,13 +395,66 @@ public class BruteV2 extends Bot {
 								}
 							}
 						} else {
-							for (int y = map.length -1 ; y >= 0 ; y--) {
+							if (map[map.length -(1+32)][targetX] == Unit.WALL) {
+								target = new Point(targetX, map.length -(1+32));
+								targetRadius = 0;
+								searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_START;
+								moveCloserToTarget = true;
+							} else {
+								for (int y = map.length-1 ; y >= 0; y--) {
+									if (map[y][targetX] == Unit.WALL) {
+										target = new Point(targetX, y);
+										targetRadius = 0;
+										//maxDistanceFromTarget = 4;
+										searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
+										moveCloserToTarget = true;
+										break;
+									}
+								}
+							}
+						}
+					}
+					else if (gameState.getMapType() == GameState.MAP_TYPE_E6) {
+						int targetX = 49;
+
+						if (gameState.getBases()[getPlayerIndex()].getPosition().y < map.length/2) {
+							for (int y = 10; y <= 12; y++) {
 								if (map[y][targetX] == Unit.WALL) {
 									target = new Point(targetX, y);
 									targetRadius = 0;
-									//maxDistanceFromTarget = 4;
-									searchPreference = PathFind.GOAL_PREFERENCE_CLOSEST_TO_TARGET;
+									maxDistanceFromTarget = 4;
 									break;
+								}
+							}
+							if (target == null) {
+								targetX = 40;
+								for (int y = 10; y < map.length; y++) {
+									if (map[y][targetX] == Unit.WALL) {
+										target = new Point(targetX, y);
+										targetRadius = 0;
+										maxDistanceFromTarget = 4;
+										break;
+									}
+								}
+							}
+						} else {
+							for (int y = map.length -(1+12); y >= map.length -(1+10); y--) {
+								if (map[y][targetX] == Unit.WALL) {
+									target = new Point(targetX, y);
+									targetRadius = 0;
+									maxDistanceFromTarget = 4;
+									break;
+								}
+							}
+							if (target == null) {
+								targetX = 40;
+								for (int y = map.length -(1+10); y >= 0; y--) {
+									if (map[y][targetX] == Unit.WALL) {
+										target = new Point(targetX, y);
+										targetRadius = 0;
+										maxDistanceFromTarget = 4;
+										break;
+									}
 								}
 							}
 						}

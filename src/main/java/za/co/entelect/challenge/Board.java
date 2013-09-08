@@ -10,14 +10,14 @@ package za.co.entelect.challenge;
 public class Board  implements java.io.Serializable {
     private int endGamePoint;
 
-    private za.co.entelect.challenge.State[][] states;
+    private za.co.entelect.challenge.StateArray[] states;
 
     public Board() {
     }
 
     public Board(
            int endGamePoint,
-           za.co.entelect.challenge.State[][] states) {
+           za.co.entelect.challenge.StateArray[] states) {
            this.endGamePoint = endGamePoint;
            this.states = states;
     }
@@ -48,7 +48,7 @@ public class Board  implements java.io.Serializable {
      * 
      * @return states
      */
-    public za.co.entelect.challenge.State[][] getStates() {
+    public za.co.entelect.challenge.StateArray[] getStates() {
         return states;
     }
 
@@ -58,15 +58,15 @@ public class Board  implements java.io.Serializable {
      * 
      * @param states
      */
-    public void setStates(za.co.entelect.challenge.State[][] states) {
+    public void setStates(za.co.entelect.challenge.StateArray[] states) {
         this.states = states;
     }
 
-    public za.co.entelect.challenge.State[] getStates(int i) {
+    public za.co.entelect.challenge.StateArray getStates(int i) {
         return this.states[i];
     }
 
-    public void setStates(int i, za.co.entelect.challenge.State[] _value) {
+    public void setStates(int i, za.co.entelect.challenge.StateArray _value) {
         this.states[i] = _value;
     }
 

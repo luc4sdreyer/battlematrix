@@ -40,7 +40,7 @@ public class App
 			if (prop.getProperty("myName") != null) {
 				myName = prop.getProperty("myName");
 			}
-			extraOutput = Boolean.parseBoolean(prop.getProperty("myName"));
+			extraOutput = Boolean.parseBoolean(prop.getProperty("extraOutput"));
 			
 			System.out.println("playStyle=" + playStyle);
 		} catch (IOException ex) {
@@ -97,22 +97,23 @@ public class App
 		Challenge service = null;
 		try {
 			java.net.URL url = new java.net.URL(endPoint);
-
 			service = new ChallengePortBindingStub(url, null);
+			//service = new ChallengeServiceSoapBindingStub(url, null);
 		} catch (AxisFault e) {
 			e.printStackTrace();
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
 
-		za.co.entelect.challenge.Board eBoard = null;
+		za.co.entelect.challenge.Board board = null;
 		State[][] eStateGrid = null;
 		HashMap<Integer, Integer> eBullets = new HashMap<Integer, Integer>();
 		GameState xGameState = null;
 		GameState prevXGameState = null;
 		
 		try {
-			eBoard = service.login();
+			//eStateGrid = service.login();
+			board = service.login();
 		} catch (NoBlameException e) {
 			e.printStackTrace();
 		} catch (EndOfGameException e) {
@@ -120,15 +121,27 @@ public class App
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
-		eStateGrid = eBoard.getStates();
+		StateArray[] stateArrayArray = board.getStates();
+		eStateGrid = new State[stateArrayArray.length][stateArrayArray[0].getItem().length];
+		for (int i = 0; i < stateArrayArray.length; i++) {
+			State[] stateArray = stateArrayArray[i].getItem();
+			//State[] stateArray = stateArrayArray[stateArrayArray.length - (1+i)].getItem();
+			State[] newStateArray = new State[stateArray.length];
+			for (int j = 0; j < stateArray.length; j++) {
+				newStateArray[j] = stateArray[stateArray.length - j - 1];
+			}
+			eStateGrid[i] = newStateArray;
+		}
+		
+		//eStateGrid = board[0].getStates();
 		//		catch (java.net.ConnectException e) {
 		//			System.out.println("Could not connect");
 		//		}
 
 		int prevTick = -1;
 		int mapType = -1;
-		long startTime = 0;
-		long MillisecondsToNextTick = 0;
+		//long startTime = 0;
+		//long MillisecondsToNextTick = 0;
 
 		while (true) {            
 			za.co.entelect.challenge.Game eGame = null;
@@ -139,16 +152,6 @@ public class App
 				System.out.println("Game Over!");
 				return;
 			}
-//			} catch (EndOfGameException e) {
-//				System.out.println("Game Over!");
-//				return;
-//			} catch (org.apache.axis.AxisFault e) {
-//				e.printStackTrace();
-//				return;
-//			} catch (RemoteException e) {
-//				e.printStackTrace();
-//				return;
-//			}
 
 			if (eGame.getCurrentTick() == prevTick) {
 				try {
@@ -169,9 +172,14 @@ public class App
 			System.out.println("getCurrentTick(): "+eGame.getCurrentTick());
 			//System.out.println("getPlayerName(): "+game.getPlayerName());
 
+			//int eStateGridWidth = (int) Math.pow(eStateGrid.length, 0.5);
+			//int eStateGridHeight = (int) Math.pow(eStateGrid.length, 2);
+			System.out.println("eStateGrid.length: " + eStateGrid.length);
+			
 			if (eGame.getEvents() != null) {
 				if (eGame.getEvents().getBlockEvents() != null) {
-					for (BlockEvent blockEvent : eGame.getEvents().getBlockEvents()) {
+					for (BlockEvent blockEvent : eGame.getEvents().getBlockEvents()) {						
+						//eStateGrid[eStateGridWidth*blockEvent.getPoint().getX() + blockEvent.getPoint().getY()] = blockEvent.getNewState();
 						eStateGrid[blockEvent.getPoint().getX()][blockEvent.getPoint().getY()] = blockEvent.getNewState();
 						System.out.println("eStateGrid[" + blockEvent.getPoint().getX() + "][" + blockEvent.getPoint().getY() +
 								"] is set to: " + blockEvent.getNewState());
@@ -183,8 +191,8 @@ public class App
 					}
 				}
 			}
-			startTime = Calendar.getInstance().getTimeInMillis();
-			MillisecondsToNextTick = eGame.getMillisecondsToNextTick();
+			//startTime = Calendar.getInstance().getTimeInMillis();
+			//MillisecondsToNextTick = eGame.getMillisecondsToNextTick();
 			
 			
 			int[] playerIdxHolder = new int[1];
@@ -267,8 +275,8 @@ public class App
 				}
 			}
 			System.out.println("numAliveTanks : "+numAliveTanks);
-			Delta d1 = null;
-			Delta d2 = null;
+			//Delta d1 = null;
+			//Delta d2 = null;
 			try {
 //				for (int i = 0; i < actions.size(); i++) {
 //					za.co.entelect.challenge.Action action = actions.get(i);
@@ -277,11 +285,11 @@ public class App
 //				}
 				if (xGameState.getTanks()[playerIdx*2 + 0].isAlive() && actions.size() > 0) {
 					System.out.println("T0 is doing: "+actions.get(0));
-					d1 = service.setAction(xGameState.getTanks()[playerIdx*2 + 0].getID(), actions.get(0));
+					service.setAction(xGameState.getTanks()[playerIdx*2 + 0].getID(), actions.get(0));
 				}
 				if (xGameState.getTanks()[playerIdx*2 + 1].isAlive() && actions.size() > 1) {
 					System.out.println("T1 is doing: "+actions.get(1));
-					d2 = service.setAction(xGameState.getTanks()[playerIdx*2 + 1].getID(), actions.get(1));
+					service.setAction(xGameState.getTanks()[playerIdx*2 + 1].getID(), actions.get(1));
 				}
 			} catch (EndOfGameException e) {
 				System.out.println("Game Over!");
@@ -301,13 +309,14 @@ public class App
 			}
 
 			long timeLeft = 0;
-			if (d2 != null) {
-				timeLeft = d2.getMillisecondsToNextTick();
-			} else if (d1 != null) {
-				timeLeft = d1.getMillisecondsToNextTick();
-			} else {
-				timeLeft = MillisecondsToNextTick - (Calendar.getInstance().getTimeInMillis() - startTime);
-			}
+//			if (d2 != null) {
+//				timeLeft = d2.getMillisecondsToNextTick();
+//			} else if (d1 != null) {
+//				timeLeft = d1.getMillisecondsToNextTick();
+//			} else {
+//				timeLeft = MillisecondsToNextTick - (Calendar.getInstance().getTimeInMillis() - startTime);
+//			}
+			timeLeft = Calendar.getInstance().getTimeInMillis() - eGame.getNextTickTime().getTimeInMillis();
 			System.out.println("Time left: " + timeLeft + " ms");
 
 			if (timeLeft > 20) {

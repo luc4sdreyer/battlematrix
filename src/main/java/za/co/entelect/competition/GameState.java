@@ -363,6 +363,10 @@ public class GameState {
 		
 		//int[][] newMap = new int[eBoard.getStates().length][eBoard.getStates()[0].getItem().length];
 		int[][] newMap = new int[eStateGrid[0].length][eStateGrid.length];
+		//int eStateGridWidth = (int) Math.pow(eStateGrid.length, 0.5);
+		//int eStateGridHeight = (int) Math.pow(eStateGrid.length, 0.5);
+		//int[][] newMap = new int[eStateGrid.length][eStateGrid[0].length];
+		//int[][] newMap = new int[eStateGridHeight][eStateGridWidth];
 
 		//TODO: Don't ignore NONE and OUT_OF_BOUNDS states!
 		for (int y = 0; y < newMap.length; y++) {

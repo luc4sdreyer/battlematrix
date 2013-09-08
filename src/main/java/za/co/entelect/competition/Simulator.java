@@ -133,7 +133,7 @@ public class Simulator implements Runnable {
 				System.out.println("Failed to make connection!");
 			}
 		} else {
-			numSims = 8;
+			numSims = 1;
 		}
 
 
@@ -142,7 +142,7 @@ public class Simulator implements Runnable {
 			if (dbMode) {
 				numTests = 100;
 			} else {
-				numTests = 1000;
+				numTests = 20;
 			}
 			long time = System.nanoTime();
 
@@ -157,9 +157,9 @@ public class Simulator implements Runnable {
 				}
 			} else {
 				String mapName = null;
-				//mapName = "mapE1_3.txt";
+				mapName = "mapE8.txt";
 				//mapName = "mapE1_" + (j%4) + ".txt";
-				mapName = "mapE" + (j%8 + 1) + ".txt";
+				//mapName = "mapE" + (j%8 + 1) + ".txt";
 				//mapName = "mapBattle" + (j%3) + ".txt";
 				gameFile = Game.readGameFromFile(mapName);
 				
@@ -238,9 +238,9 @@ public class Simulator implements Runnable {
 					results.add(nextResult);
 					Simulator sim = null;
 					//if (i < numTests/2) {
-					sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2, i);
+						sim = new Simulator(nextResult, gameFile, moveList, bot1, bot2, i);
 					//} else {
-					//	sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1);
+					//	sim = new Simulator(nextResult, gameFile, moveList, bot2, bot1, i);
 					//}
 					executor.execute(sim);
 				}

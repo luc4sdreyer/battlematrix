@@ -467,7 +467,7 @@ public class ImageDrawingApplet extends JApplet {
 		ArrayList<String> gameList = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0, 92555845741342L).toStringList();
 		
 		mainGUI.game = new Game(
-							"za.co.entelect.competition.bots.Random",
+							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Minimax",
 							//"za.co.entelect.competition.bots.MinimaxFixedDepth4",
 							//"za.co.entelect.competition.bots.Endgame",
@@ -476,6 +476,7 @@ public class ImageDrawingApplet extends JApplet {
 							"za.co.entelect.competition.bots.BruteV2",
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
+							"za.co.entelect.competition.bots.Random",
 							//"map.txt",
 							"mapE8.txt",
 							//"mapBattle0.txt",

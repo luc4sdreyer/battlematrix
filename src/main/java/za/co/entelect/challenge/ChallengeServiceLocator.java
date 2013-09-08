@@ -22,7 +22,7 @@ public class ChallengeServiceLocator extends org.apache.axis.client.Service impl
     }
 
     // Use to get a proxy class for ChallengePort
-    private java.lang.String ChallengePort_address = "http://localhost:7070/Challenge/ChallengeService";
+    private java.lang.String ChallengePort_address = "http://127.0.0.1:7070/Challenge/ChallengeService";
 
     public java.lang.String getChallengePortAddress() {
         return ChallengePort_address;

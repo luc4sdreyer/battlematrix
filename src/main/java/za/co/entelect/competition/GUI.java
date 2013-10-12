@@ -325,7 +325,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 			// Time to update the gameState 
 			timercount = 0;
 
-			if (ImageDrawingApplet.absoluteTiming) {
+			if (GUI.absoluteTiming) {
 				checkAndUpdateGameState();
 				
 				synchronized(syncObject) {
@@ -364,7 +364,7 @@ class ImageDrawingComponent extends Component implements ActionListener {
 	}
 }
 
-public class ImageDrawingApplet extends JApplet {
+public class GUI extends JApplet {
 	
 	//TODO: Just a marker!
 	public final static int DELAY = 100;
@@ -389,7 +389,7 @@ public class ImageDrawingApplet extends JApplet {
 
 	public static void main(String s[]) {
 		JFrame f = new JFrame("ImageDrawing");
-		final ImageDrawingApplet mainGUI = new ImageDrawingApplet();
+		final GUI mainGUI = new GUI();
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) {
 //				try {
@@ -447,14 +447,14 @@ public class ImageDrawingApplet extends JApplet {
 		mainGUI.setCurrentGameState(mainGUI.game.getGameState().clone());
 		mainGUI.repaint();
 		
-		if (ImageDrawingApplet.absoluteTiming) {
+		if (GUI.absoluteTiming) {
 			mainGUI.stateTimeNS = System.nanoTime();
 			mainGUI.generateNextGameState();
 		}
 
 		
 		while (true) {
-			if (ImageDrawingApplet.absoluteTiming) {
+			if (GUI.absoluteTiming) {
 				synchronized(mainGUI.syncObject) {
 				    try {
 				        // Calling wait() will block this thread until another thread
@@ -557,7 +557,7 @@ public class ImageDrawingApplet extends JApplet {
 //				e1.printStackTrace();
 //			}	
 //		}
-		if (!ImageDrawingApplet.absoluteTiming) {			
+		if (!GUI.absoluteTiming) {			
 			try {
 				Thread.sleep(DELAY);
 			} catch (InterruptedException e1) {
@@ -580,7 +580,7 @@ public class ImageDrawingApplet extends JApplet {
 
 
 
-	public ImageDrawingApplet () {
+	public GUI () {
 		syncObject = new Object();
 		id = new ImageDrawingComponent(frameTime, syncObject);
         addKeyListener(new TAdapter());
@@ -628,7 +628,7 @@ public class ImageDrawingApplet extends JApplet {
 		b1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {  
 				//System.out.println("doTask");
-				if (ImageDrawingApplet.absoluteTiming) {
+				if (GUI.absoluteTiming) {
 					id.startTimer();
 				}
 			};

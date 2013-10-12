@@ -2,6 +2,9 @@ package za.co.entelect.competition;
 
 import java.awt.Point;
 
+/**
+ * Represents the Bullet unit
+ */
 public class Bullet extends Unit {
 	public Bullet(Point position, int rotation) {
 		super(position, rotation);

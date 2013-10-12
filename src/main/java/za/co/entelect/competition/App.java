@@ -18,12 +18,25 @@ import za.co.entelect.competition.bots.Bot;
 import za.co.entelect.competition.bots.BruteV2;
 import za.co.entelect.competition.bots.Random;
 
-/**
- * Hello world!
- *
- */
 public class App 
 {
+	/**
+	 * This is the main application. It implements the competition rules as specified by Entelect.
+	 * A copy of the rules are available at doc\rules.txt
+	 * 
+	 * The configuration options in config.properties:
+	 * 	1. playStyle can be one of the following:
+	 * 		- BruteV2: aggressive, dependable and not very smart. I submitted this bot in the end.
+	 * 		- MinimaxFixedDepth2: Uses a minimax search depth of 2 or 8, depending on how you look at it.
+	 * 							  Each bot makes two decisions, resulting in 8 plies.
+	 * 		- Random: completely random actions.
+	 * 		- Fire: Will fire forever
+	 * 		- NotrhL Will move north forever
+	 * 2. myName: A string that the program uses to recognise itself.
+	 * 3. extraOutput: Boolean indicating whether A LOT of extra debugging output should be shown.  
+	 * 
+	 * @param args The endpoint (game hosting server) to connect to, as per the rules.
+	 */
 	public static void main( String[] args )
 	{
 		Properties prop = new Properties();		
@@ -98,7 +111,6 @@ public class App
 		try {
 			java.net.URL url = new java.net.URL(endPoint);
 			service = new ChallengePortBindingStub(url, null);
-			//service = new ChallengeServiceSoapBindingStub(url, null);
 		} catch (AxisFault e) {
 			e.printStackTrace();
 		} catch (MalformedURLException e) {
@@ -112,7 +124,6 @@ public class App
 		GameState prevXGameState = null;
 		
 		try {
-			//eStateGrid = service.login();
 			board = service.login();
 		} catch (NoBlameException e) {
 			e.printStackTrace();
@@ -125,23 +136,15 @@ public class App
 		eStateGrid = new State[stateArrayArray.length][stateArrayArray[0].getItem().length];
 		for (int i = 0; i < stateArrayArray.length; i++) {
 			State[] stateArray = stateArrayArray[i].getItem();
-			//State[] stateArray = stateArrayArray[stateArrayArray.length - (1+i)].getItem();
 			State[] newStateArray = new State[stateArray.length];
 			for (int j = 0; j < stateArray.length; j++) {
 				newStateArray[j] = stateArray[stateArray.length - j - 1];
 			}
 			eStateGrid[i] = newStateArray;
 		}
-		
-		//eStateGrid = board[0].getStates();
-		//		catch (java.net.ConnectException e) {
-		//			System.out.println("Could not connect");
-		//		}
 
 		int prevTick = -1;
 		int mapType = -1;
-		//long startTime = 0;
-		//long MillisecondsToNextTick = 0;
 
 		while (true) {            
 			za.co.entelect.challenge.Game eGame = null;
@@ -170,17 +173,11 @@ public class App
 			prevTick = eGame.getCurrentTick();
 
 			System.out.println("getCurrentTick(): "+eGame.getCurrentTick());
-			//System.out.println("getPlayerName(): "+game.getPlayerName());
-
-			//int eStateGridWidth = (int) Math.pow(eStateGrid.length, 0.5);
-			//int eStateGridHeight = (int) Math.pow(eStateGrid.length, 2);
 			System.out.println("eStateGrid.length: " + eStateGrid.length);
 			
 			if (eGame.getEvents() != null) {
 				if (eGame.getEvents().getBlockEvents() != null) {
-					for (BlockEvent blockEvent : eGame.getEvents().getBlockEvents()) {						
-						//eStateGrid[eStateGridWidth*blockEvent.getPoint().getX() + blockEvent.getPoint().getY()] = blockEvent.getNewState();
-						eStateGrid[blockEvent.getPoint().getX()][blockEvent.getPoint().getY()] = blockEvent.getNewState();
+					for (BlockEvent blockEvent : eGame.getEvents().getBlockEvents()) {
 						System.out.println("eStateGrid[" + blockEvent.getPoint().getX() + "][" + blockEvent.getPoint().getY() +
 								"] is set to: " + blockEvent.getNewState());
 					}
@@ -191,9 +188,6 @@ public class App
 					}
 				}
 			}
-			//startTime = Calendar.getInstance().getTimeInMillis();
-			//MillisecondsToNextTick = eGame.getMillisecondsToNextTick();
-			
 			
 			int[] playerIdxHolder = new int[1];
 			playerIdxHolder[0] = -1;
@@ -245,15 +239,6 @@ public class App
 						action = za.co.entelect.challenge.Action.FIRE;
 					}
 
-					//				int rand = (int)(Math.random()*5);
-					//				switch(rand) {
-					//					case 0: 	a1 = za.co.entelect.challenge.Action.UP; 	break;
-					//					case 1: 	a1 = za.co.entelect.challenge.Action.RIGHT; break;
-					//					case 2: 	a1 = za.co.entelect.challenge.Action.DOWN;	break;
-					//					case 3: 	a1 = za.co.entelect.challenge.Action.RIGHT; break;
-					//					case 4: 	a1 = za.co.entelect.challenge.Action.FIRE; 	break;
-					//				}
-
 					actions.add(action);
 				}
 			} else {
@@ -275,14 +260,7 @@ public class App
 				}
 			}
 			System.out.println("numAliveTanks : "+numAliveTanks);
-			//Delta d1 = null;
-			//Delta d2 = null;
 			try {
-//				for (int i = 0; i < actions.size(); i++) {
-//					za.co.entelect.challenge.Action action = actions.get(i);
-//					service.setActions(i, action);
-//					System.out.println("T"+(i+1)+" doing: "+action);
-//				}
 				if (xGameState.getTanks()[playerIdx*2 + 0].isAlive() && actions.size() > 0) {
 					System.out.println("T0 is doing: "+actions.get(0));
 					service.setAction(xGameState.getTanks()[playerIdx*2 + 0].getID(), actions.get(0));
@@ -309,13 +287,6 @@ public class App
 			}
 
 			long timeLeft = 0;
-//			if (d2 != null) {
-//				timeLeft = d2.getMillisecondsToNextTick();
-//			} else if (d1 != null) {
-//				timeLeft = d1.getMillisecondsToNextTick();
-//			} else {
-//				timeLeft = MillisecondsToNextTick - (Calendar.getInstance().getTimeInMillis() - startTime);
-//			}
 			timeLeft = Calendar.getInstance().getTimeInMillis() - eGame.getNextTickTime().getTimeInMillis();
 			System.out.println("Time left: " + timeLeft + " ms");
 

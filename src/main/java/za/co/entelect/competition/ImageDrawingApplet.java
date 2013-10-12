@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Scanner;
 import java.util.StringTokenizer;
@@ -230,13 +229,6 @@ class ImageDrawingComponent extends Component implements ActionListener {
 			int rotation, double scale, int frame, int numFrames) {
 		int x = ((currentPos.x - previousPos.x) * (this.timercount+1)) + (previousPos.x * this.blockSize); // + internalOffset.x;
 		int y = ((currentPos.y - previousPos.y) * (this.timercount+1)) + (previousPos.y * this.blockSize); // + internalOffset.y;
-		if (numFrames == 2) {
-			//System.out.println("Current position\tx:"+x+"\ty:"+y+"\ttimercount:"+this.timercount+"\trotation:"+rotation);
-			//if (this.timercount == 0) {
-			//	int ab = 0; ab = (ab == 0) ? 1 : 2;
-			//}
-			
-		}
 		drawGrid(g, img, x, y, rotation, scale, frame, numFrames);
 	}	
 	
@@ -254,60 +246,22 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		BufferedImage toDraw = img[rotation];
 		
 		if (numFrames != 1) {
-			if (img[0].getWidth() == 128) {
-				//System.out.println("x: "+(img.getWidth()*frame/numFrames)+"\tw: "+img.getWidth()/numFrames+"\tframe: "+frame);
-			}
-			//Point p = new Point(img[rotation].getWidth()/2,img[rotation].getHeight()/2);
-			//p = Util.movePointDist(p, (rotation+1)%4, (img[rotation].getWidth()*frame/numFrames));
-			//p.translate(-img[rotation].getWidth()/2, -img[rotation].getHeight()/2);
 			if (rotation == 0) {
 				toDraw = toDraw.getSubimage(img[rotation].getWidth()*frame/numFrames, 0, img[rotation].getWidth()/numFrames, img[rotation].getHeight());
 			} else if (rotation == 1) {
-				//toDraw = toDraw.getSubimage(0, img[rotation].getHeight()*frame/numFrames, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
-				//System.out.println("img[rotation].getHeight()"+img[rotation].getHeight());
-				//System.out.println("img[rotation].getWidth()"+img[rotation].getWidth());
 				toDraw = toDraw.getSubimage(0, img[rotation].getHeight()*frame/numFrames, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
 			} else if (rotation == 2) {
 				toDraw = toDraw.getSubimage(img[rotation].getWidth()*(numFrames - 1)/numFrames - img[rotation].getWidth()*frame/numFrames, 0, img[rotation].getWidth()/numFrames, img[rotation].getHeight());
 			} else if (rotation == 3) {
 				toDraw = toDraw.getSubimage(0, img[rotation].getHeight()*(numFrames - 1)/numFrames - img[rotation].getHeight()*frame/numFrames, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
-				//toDraw = toDraw.getSubimage(0, 0, img[rotation].getWidth(), img[rotation].getHeight()/numFrames);
 			} 
 		}
 		
-		
-//		
-//		if ((img.getHeight() != 3) && (rotation != 0)) {		
-//			double rotationRequired = rotation*Math.PI/2;
-//			double locationX = img.getWidth() / 2;
-//			double locationY = img.getHeight() / 2;
-//			AffineTransform tx = AffineTransform.getRotateInstance(rotationRequired, locationX, locationY);
-//			AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);		
-//			img = op.filter(img, null);
-//		}
-		
-		
 		g2.drawImage(toDraw, (int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), null);
-		if (numFrames == 2) {
-			//g2.setColor(Color.WHITE);
-			//g2.drawRect((int)Math.round(pixelX*scale), (int)Math.round(pixelY*scale), img[0].getWidth(), img[0].getHeight());
-		}
 	}
-
-	/** In this example the image is recalculated on the fly every time
-	 * This makes sense where repaints are infrequent or will use a
-	 * different filter/op from the last.
-	 * In other cases it may make sense to "cache" the results of the
-	 * operation so that unless 'opIndex' changes, drawing is always a
-	 * simple copy.
-	 * In such a case create the cached image and directly apply the filter
-	 * to it and retain the resulting image to be repainted.
-	 * The resulting image if untouched and unchanged Java 2D may potentially
-	 * use hardware features to accelerate the blit.
-	 */
+	
 	public void paint(Graphics g) {
 		super.paint(g);
-		//System.out.println("Repaint: "+timercount);
 		GameState currGS = this.currentGameState;
 		GameState prevGS = this.previousGameState;
 		
@@ -359,7 +313,6 @@ class ImageDrawingComponent extends Component implements ActionListener {
 		for (int i = 0; i < currGS.getCollisions().size(); i++) {
 			drawGrid(g, collision, currGS.getCollisions().get(i).getPosition(), currGS.getCollisions().get(i).getPosition(), internalOffset,
 					currGS.getCollisions().get(i).getRotation(), this.drawScale, (timercount)/2, 8);
-			//System.out.println("timercount: "+timercount+"\ttimercount/2:"+timercount/2);
 		}
 		Toolkit.getDefaultToolkit().sync();
 		g.dispose();
@@ -367,12 +320,6 @@ class ImageDrawingComponent extends Component implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-//		if (inGame) {
-//            checkApple();
-//            checkCollision();
-//            move();
-//        }
-		//System.out.print(". ");
 		this.timercount++;
 		if (timercount >= 3) {
 			// Time to update the gameState 
@@ -380,9 +327,6 @@ class ImageDrawingComponent extends Component implements ActionListener {
 
 			if (ImageDrawingApplet.absoluteTiming) {
 				checkAndUpdateGameState();
-				//System.out.println("previousGameState: "+this.previousGameState);
-				//System.out.println("currentGameState: "+this.currentGameState);
-				//System.out.println("nextGameState: "+this.nextGameState);
 				
 				synchronized(syncObject) {
 				    syncObject.notify();
@@ -464,7 +408,7 @@ public class ImageDrawingApplet extends JApplet {
 		f.add("Center", mainGUI);
 		
 		//GameState gameState = MapGenerator.generateRandom(80, 100, 60, 80, 5, 0.10, true, true, 1, 0, 92555845741342L); //50851925610806L);
-		ArrayList<String> gameList = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0, 92555845741342L).toStringList();
+		//ArrayList<String> gameList = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0, 92555845741342L).toStringList();
 		
 		mainGUI.game = new Game(
 							//"za.co.entelect.competition.bots.Random",
@@ -478,11 +422,11 @@ public class ImageDrawingApplet extends JApplet {
 							//"za.co.entelect.competition.bots.DoNothing",
 							"za.co.entelect.competition.bots.Random",
 							//"map.txt",
-							"mapE8.txt",
+							"mapE8.txt"
 							//"mapBattle0.txt",
 							//gameState,
 							//gameList,
-							false);
+							);
 		//mainGUI.game.getGameState().setRules(GameState.RULES_TOTAL_DESTRUCTION);
 		//GameState.maxTurns = 200;
 		

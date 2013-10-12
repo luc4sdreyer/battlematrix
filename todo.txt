@@ -1,2 +1,0 @@
-Performance:
-Compare memory use and CPU time for boolean array, Bitset and FastBitSet

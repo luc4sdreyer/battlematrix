@@ -2,6 +2,10 @@ package za.co.entelect.competition.bots;
 
 import za.co.entelect.competition.GameState;
 
+/**
+ * All bots must extend this abstract class.
+ */
+
 public abstract class Bot {
 	private int playerIndex;
 	private String name;

@@ -1,15 +1,19 @@
-package za.co.entelect.competition.bots;
+package za.co.entelect.competition;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-//import java.util.Random;
 
-import za.co.entelect.competition.GameState;
-import za.co.entelect.competition.Unit;
-import za.co.entelect.competition.Util;
+import za.co.entelect.competition.bots.MCTS;
+import za.co.entelect.competition.bots.RandomLegal;
+
+/**
+ * Implements a structure and some logic for the Monte Carlo tree search bot.
+ * This code should actually be in the bots package because it's specific to one bot
+ * but it's not a bot so it can't be there.  This code was based on the MCTS example at:
+ * http://mcts.ai/code/java.html
+ */
 
 public class TreeNode {
 	static final double epsilon = 1e-6;
@@ -21,14 +25,14 @@ public class TreeNode {
 
 
 
-	final int selectionFunction = SF_UCT;    
-	int[] actions;
-	int playerIdx;			// This node's playerIdx refers to the player that has moved to get to this "state"    
-	TreeNode[] children;
-	double nVisits;
-	double totValue;
-	long ID;
-	MCTS search;
+	public final int selectionFunction = SF_UCT;    
+	public int[] actions;
+	public int playerIdx;			// This node's playerIdx refers to the player that has moved to get to this "state"    
+	public TreeNode[] children;
+	public double nVisits;
+	public double totValue;
+	public long ID;
+	public MCTS search;
 
 	public TreeNode(int[] actions, int playerIdx, MCTS search) {
 		this.actions = actions;

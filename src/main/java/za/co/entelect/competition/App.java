@@ -24,14 +24,14 @@ public class App
 	 * This is the main application. It implements the competition rules as specified by Entelect.
 	 * A copy of the rules are available at doc\rules.txt
 	 * 
-	 * The configuration options in config.properties:
+	 * The configuration options in configApp.properties:
 	 * 	1. playStyle can be one of the following:
 	 * 		- BruteV2: aggressive, dependable and not very smart. I submitted this bot in the end.
 	 * 		- MinimaxFixedDepth2: Uses a minimax search depth of 2 or 8, depending on how you look at it.
 	 * 							  Each bot makes two decisions, resulting in 8 plies.
 	 * 		- Random: completely random actions.
 	 * 		- Fire: Will fire forever
-	 * 		- NotrhL Will move north forever
+	 * 		- North: Will move north forever
 	 * 2. myName: A string that the program uses to recognise itself.
 	 * 3. extraOutput: Boolean indicating whether A LOT of extra debugging output should be shown.  
 	 * 
@@ -40,7 +40,7 @@ public class App
 	public static void main( String[] args )
 	{
 		Properties prop = new Properties();		
-		String propertiesFile = "config.properties";
+		String propertiesFile = "configApp.properties";
 		
 		String playStyle = new String();
 		String myName = new String();

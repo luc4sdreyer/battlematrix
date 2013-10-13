@@ -17,14 +17,57 @@ import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * A simulator to test bots. Most of the configuration options are in the
+ * code below (I hope my boss never finds this code because he'll probably
+ * fire me. But if Jon Skeet finds this code he will consume my soul).
+ * 
+ * Anyway:
+ * 		dbMode:					true to write results to MySQL database.
+ * 		saveGamesWhereP1Loses:	Save a movelist in \movelists when P1 loses.
+ * 		saveGamesWhereP2Loses:	Save a movelist in \movelists when P2 loses.
+ * 		saveGamesWhereDraws:	Save a movelist in \movelists when the game draws.
+ * 		numThreads:				Number of CPU threads to use.
+ * 		bot1:					The full qualified name for player 1.
+ * 		bot2:					The full qualified name for player 2.
+ * 		numSims:				The number of sims. Each sim consist of numTest tests.
+ * 		numTests:				The number of tests. Each test is one battlematrix game.
+ * 								Therefore the number of games played is numSims * numTests.
+ * 		mapName:				The filename of the map. Maps are loaded from the assets folder.
+ *	 							Example: "mapE1.txt" for Entelect's first map. There are 
+ *								options to have a different map for each sim.
+ * 		
+ */
 public class Simulator implements Runnable {
 	public static final boolean dbMode = false;
 	public static boolean saveGamesWhereP1Loses = false;
 	public static boolean saveGamesWhereP2Loses = false;
 	public static boolean saveGamesWhereDraws = false;
 	public static final int numThreads = 5;
+
+	public static String bot1 =
+			"za.co.entelect.competition.bots.Random"
+			//"za.co.entelect.competition.bots.Endgame"
+			//"za.co.entelect.competition.bots.Minimax"
+			//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
+			//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
+			//"za.co.entelect.competition.bots.MCTS"
+			//"za.co.entelect.competition.bots.Brute"
+			//"za.co.entelect.competition.bots.BruteV2"
+			;
+
+	public static String bot2 =
+			//"za.co.entelect.competition.bots.Random"
+			//"za.co.entelect.competition.bots.Endgame"
+			//"za.co.entelect.competition.bots.Minimax"
+			//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
+			//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
+			//"za.co.entelect.competition.bots.MCTS"
+			//"za.co.entelect.competition.bots.Brute"
+			"za.co.entelect.competition.bots.BruteV2"
+			;
+
 	public static Connection connection = null;
-	
 	private Game game;
 	private ArrayList<Integer>[] moveList;
 	private int timeLimit = 100;
@@ -35,8 +78,7 @@ public class Simulator implements Runnable {
 		this.game = new Game(
 				bot1,
 				bot2,
-				file,
-				false);
+				file);
 		//gameState.getTanks()[1].setAlive(false);
 		//gameState.getTanks()[2].setAlive(false);
 		//gameState.getTanks()[3].setAlive(false);
@@ -149,7 +191,7 @@ public class Simulator implements Runnable {
 			ArrayList<String> gameFile = null;
 			String mapString = null;
 			if (dbMode) {
-				gameFile = Game.readGameFromFile("map" + j%5 + ".txt");
+				gameFile = GameState.readGameFromFile("map" + j%5 + ".txt");
 				
 				mapString = new String();
 				for (String str : gameFile) {
@@ -161,7 +203,7 @@ public class Simulator implements Runnable {
 				//mapName = "mapE1_" + (j%4) + ".txt";
 				//mapName = "mapE" + (j%8 + 1) + ".txt";
 				//mapName = "mapBattle" + (j%3) + ".txt";
-				gameFile = Game.readGameFromFile(mapName);
+				gameFile = GameState.readGameFromFile(mapName);
 				
 				System.out.println("Playing on map: " + mapName);
 				
@@ -193,30 +235,8 @@ public class Simulator implements Runnable {
 				//gameFile = newGame.toStringList();
 				
 			}
-			ArrayList<Integer>[] moveList = ImageDrawingApplet.loadMoveList();
+			ArrayList<Integer>[] moveList = GUI.loadMoveList();
 			moveList = null;
-
-			String bot1 =
-					"za.co.entelect.competition.bots.Random"
-					//"za.co.entelect.competition.bots.Endgame"
-					//"za.co.entelect.competition.bots.Minimax"
-					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
-					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
-					//"za.co.entelect.competition.bots.MCTS"
-					//"za.co.entelect.competition.bots.Brute"
-					//"za.co.entelect.competition.bots.BruteV2"
-					;
-
-			String bot2 =
-					//"za.co.entelect.competition.bots.Random"
-					//"za.co.entelect.competition.bots.Endgame"
-					//"za.co.entelect.competition.bots.Minimax"
-					//"za.co.entelect.competition.bots.MinimaxFixedDepth2"
-					//"za.co.entelect.competition.bots.MinimaxFixedDepth4"
-					//"za.co.entelect.competition.bots.MCTS"
-					//"za.co.entelect.competition.bots.Brute"
-					"za.co.entelect.competition.bots.BruteV2"
-					;
 
 			ArrayList<Result> results = new ArrayList<Result>();
 			if (numThreads == 1) {

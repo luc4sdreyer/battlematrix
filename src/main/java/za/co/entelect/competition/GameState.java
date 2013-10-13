@@ -1,31 +1,17 @@
 package za.co.entelect.competition;
 
 import java.awt.Point;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
 import za.co.entelect.challenge.Action;
 
-
 /**
- * A tank is defined by its top-left point
- * 
- * Unit mapping:
- * 0	Empty
- * 1	Wall
- * 2	Tank1A
- * 3	Tank1B
- * 4	Tank2A
- * 5	Tank2B
- * 6	Tank1A bullet
- * 7	Tank1B bullet
- * 8	Tank2A bullet
- * 9	Tank2B bullet
- * 10	Base1
- * 11	Base2
- * @author luc4s_000
- *
+ * The core of what happens in the game. Contains an integer grid of all units (see Unit class)
+ * and implements the game logic. 
  */
 
 public class GameState {
@@ -61,11 +47,30 @@ public class GameState {
 	public static final int MAP_TYPE_E7 = 8;
 	
 	public final static int tankSize = 5;
-	//TODO: Set to final maxTurns
 	public static int maxTurns = 215;
 	public final static int maxNumBlocks = 10000;
 	
-	private int[][] map;
+
+	/**
+	 * A tank is defined by its top-left point
+	 * 
+	 * Unit mapping:
+	 * 0	Empty
+	 * 1	Wall
+	 * 2	Tank1A
+	 * 3	Tank1B
+	 * 4	Tank2A
+	 * 5	Tank2B
+	 * 6	Tank1A bullet
+	 * 7	Tank1B bullet
+	 * 8	Tank2A bullet
+	 * 9	Tank2B bullet
+	 * 10	Base1
+	 * 11	Base2
+	 * 
+	 */	
+	private int[][] map;	
+	
 	private ArrayList<Collision> collisions;
 	private Tank[] tanks;
 	private Bullet[] bullets;
@@ -273,6 +278,10 @@ public class GameState {
 			return new GameState(newMap, newBullets, newTanks, newBases, newCollisions, this.tickCount, this.rules, this.mapType);
 		}
 	}
+	
+	/**
+	 * Convert from the Entelect version of GameState called za.co.entelect.challenge.Game
+	 */
 	public static GameState fromEGame(za.co.entelect.challenge.Game eGame, za.co.entelect.challenge.State[][] eStateGrid, 
 			HashMap<Integer, Integer> eBullets, String myName, int[] playerIdxHolder, GameState prevXGameState) {
 		if (eGame.getPlayers().length != 2) {
@@ -314,17 +323,6 @@ public class GameState {
 
 			
 			if (ePlayer.getBullets() != null) {
-//				if (eBullets.length > 2) {
-//					System.err.println("eBullets.length > 2");
-//					return null;
-//				}
-//												
-//				for (int j = 0; j < eBullets.length; j++) {
-//					System.out.println("Bullet[" + eBullets[j].getX() + "][" + eBullets[j].getY() + "] = ID: " + eBullets[j].getId() + " direction: " + eBullets[j].getDirection().getValue());
-//					
-//					newBullets[j] = new Bullet(new Point(eBullets[j].getX(),eBullets[j].getY()), EDirectionToXRotation(eBullets[j].getDirection()), true);
-//					//eBullets[j].getId()
-//				}
 				for (int j = 0; j < ePlayer.getBullets().length; j++) {
 					eBulletsTemp.add(ePlayer.getBullets()[j]);
 				}
@@ -360,15 +358,8 @@ public class GameState {
 			newBullets[eBullets.get(key) - Unit.BULLET_TANK1A] = new Bullet(new Point(eBulletsTemp.get(i).getX(),eBulletsTemp.get(i).getY()), EDirectionToXRotation(eBulletsTemp.get(i).getDirection()), true);
 		}
 		
-		
-		//int[][] newMap = new int[eBoard.getStates().length][eBoard.getStates()[0].getItem().length];
 		int[][] newMap = new int[eStateGrid[0].length][eStateGrid.length];
-		//int eStateGridWidth = (int) Math.pow(eStateGrid.length, 0.5);
-		//int eStateGridHeight = (int) Math.pow(eStateGrid.length, 0.5);
-		//int[][] newMap = new int[eStateGrid.length][eStateGrid[0].length];
-		//int[][] newMap = new int[eStateGridHeight][eStateGridWidth];
 
-		//TODO: Don't ignore NONE and OUT_OF_BOUNDS states!
 		for (int y = 0; y < newMap.length; y++) {
 			for (int x = 0; x < newMap[0].length; x++) {
 				if (eStateGrid[x][y].getValue().equals(za.co.entelect.challenge.State._FULL)) {
@@ -379,7 +370,6 @@ public class GameState {
 					newMap[y][x] = Unit.WALL;
 				} else {
 					System.err.println("FATAL ERROR: eStateGrid[" + x + "][" + y + "] is unknown: " + eStateGrid[x][y].getValue());
-					//TODO: Return NULL here.
 					continue;
 				}
 			}
@@ -506,9 +496,6 @@ public class GameState {
 				default: 	line[x] = '?'; 	break;
 				}
 			}
-//			if (y == this.map.length - 1) {
-//				sb.append(" "+Integer.toString(tickCount));
-//			}
 		}
 		for (int i = 0; i < this.tanks.length; i++) {
 			if (!this.tanks[i].isAlive()) {
@@ -537,27 +524,7 @@ public class GameState {
 		scanner.close();
 		return list;
 	}
-//	public ArrayList<Point> getNaiveTankMoves(Point p) {
-//		ArrayList<Point> moves = new ArrayList<Point>();
-//		Point newP;
-//		newP = new Point(p.x, p.y+1);
-//		if (newP.y < this.map.length && this.map[newP.y][newP.x] == 0) {
-//			moves.add(newP);
-//		}
-//		newP = new Point(p.x+1, p.y);
-//		if (newP.x < this.map[0].length && this.map[newP.y][newP.x] == 0) {
-//			moves.add(newP);
-//		}
-//		newP = new Point(p.x, p.y-1);
-//		if (newP.y >= 0 && this.map[newP.y][newP.x] == 0) {
-//			moves.add(newP);
-//		}
-//		newP = new Point(p.x-1, p.y);
-//		if (newP.x >= 0 && this.map[newP.y][newP.x] == 0) {
-//			moves.add(newP);
-//		}
-//		return moves;
-//	}
+
 	public ArrayList<Integer> getTankActions(int unitCode) {
 		if (Unit.isTank(unitCode)) {
 			Tank me = (Tank) getUnit(unitCode);
@@ -628,25 +595,6 @@ public class GameState {
 		}
 		return points;
 	}
-//	//private boolean moveTank(Point oldP, Point nextP, GameAction gameAction, int idx) {
-//	//	return false;
-//	//}
-//	public boolean canTankMove(Point oldP, Point newP) {
-//		int unitValue = this.map[oldP.y][oldP.x];
-//		if ((isInMapTank(newP) == true)
-//				&& (Util.mDist(oldP, newP) == 1)) {
-//			for (int y = newP.y; y < tankSize + newP.y; y++) {
-//				for (int x = newP.x; x < tankSize + newP.x; x++) {
-//					if (this.map[y][x] != 0 && this.map[y][x] != unitValue) {
-//						return false;
-//					}
-//				}
-//			}
-//			return true;
-//		} else {
-//			return false;
-//		}
-//	}
 	public boolean isInMapTank(Point p) {
 		if ((p.x + tankSize < this.map[0].length)
 				&& (p.x >= 0)
@@ -1204,24 +1152,6 @@ public class GameState {
 		//	
 		this.setStatusAndStage();
 		
-		
-//		int oldStatus = 0;
-//		if (!bases[0].isAlive() 
-//				|| !bases[1].isAlive()
-//				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
-//			if ((!bases[0].isAlive() && !bases[1].isAlive())
-//				|| (!tanks[0].isAlive() && !tanks[1].isAlive() &&!tanks[2].isAlive() &&!tanks[3].isAlive())) {
-//				oldStatus = STATUS_DRAW;
-//			} else if (!bases[0].isAlive()) {
-//				oldStatus = STATUS_PLAYER2_WINS;
-//			} else {
-//				oldStatus = STATUS_PLAYER1_WINS;
-//			}
-//		}
-//		if (this.status != oldStatus) {
-//			System.err.println("FATAL ERROR: this.status != oldStatus");
-//		}
-		
 		//
 		// Hash IN all the units.
 		//
@@ -1640,6 +1570,126 @@ public class GameState {
 		} 
 	}
 	
+	static int getRotationFromChar(char c) {
+		int rotation = 2;		
+		if (Character.isDigit(c)) {
+			int n = Character.getNumericValue(c);
+			if (n >= 0 && n <= 3) {
+				rotation = n;
+			}
+		}
+		return rotation;
+	}
+	public static ArrayList<String> readGameFromFile(String filename) {
+		Scanner in = null;
+		try {
+			in = new Scanner(new File("./assets/"+filename));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+		ArrayList<String> file = new ArrayList<String>(); 
+		while (in.hasNext()) {
+			String line = in.nextLine();
+			file.add(line);
+		}
+		in.close();
+		
+		return file;
+	}
+	public static GameState newGame(String filename) {		
+		return newGame(GameState.readGameFromFile(filename));
+	}
+	public static GameState newGame(ArrayList<String> file) {		
+		int[][] map = new int[file.size()][file.get(0).length()];
+		Tank[] tanks = new Tank[4];
+		Base[] bases = new Base[2];
+		Bullet[] bullets = new Bullet[4];
+		for (int i = 0; i < bullets.length; i++) {
+			bullets[i] = new Bullet(new Point(0,0), 0, false);
+		}
+		ArrayList<Collision> collisions = new ArrayList<Collision>();
+		for (int y = 0; y < map.length; y++) {
+			for (int x = 0; x < map[0].length; x++) {
+				char c = file.get(y).charAt(x);
+				if (c == '_') {
+					map[y][x] = 0;
+				} else if (c == '#') {
+					map[y][x] = 1;
+				} else if (c == 'A') {
+					if (tanks[0] == null) {
+						tanks[0] = new Tank(new Point(x,y), GameState.getRotationFromChar(file.get(y).charAt(x+1)), -1);
+						x++;
+					} else {
+						map[y][x] = 0;
+					}
+				} else if (c == 'B') {
+					if (tanks[1] == null) {
+						tanks[1] = new Tank(new Point(x,y), GameState.getRotationFromChar(file.get(y).charAt(x+1)), -1);
+						x++;
+					} else {
+						map[y][x] = 0;
+					}
+				} else if (c == 'X') {
+					if (tanks[2] == null) {
+						tanks[2] = new Tank(new Point(x,y), GameState.getRotationFromChar(file.get(y).charAt(x+1)), -1);
+						x++;
+					} else {
+						map[y][x] = 0;
+					}
+				} else if (c == 'Y') {
+					if (tanks[3] == null) {
+						tanks[3] = new Tank(new Point(x,y), GameState.getRotationFromChar(file.get(y).charAt(x+1)), -1);
+						x++;
+					} else {
+						map[y][x] = 0;
+					}
+				} else if (c == 'C') {
+					bases[0] = new Base(new Point(x,y), 2);
+					map[y][x] = Unit.BASE1;
+				} else if (c == 'Z') {
+					bases[1] = new Base(new Point(x,y), 2);
+					map[y][x] = Unit.BASE2;
+				} else if (c == '0') {
+					bullets[0] = new Bullet(new Point(x,y), 2);
+				} else if (c == '1') {
+					bullets[1] = new Bullet(new Point(x,y), 2);
+				} else if (c == '2') {
+					bullets[2] = new Bullet(new Point(x,y), 2);
+				} else if (c == '3') {
+					bullets[3] = new Bullet(new Point(x,y), 2);
+				} else if (c == '_') {
+					map[y][x] = 0;
+				} else {
+					System.err.println("UNKNOWN SYMBOL IN MAP.TXT: "+c);
+				}
+			}
+		}
+		for (int i = 0; i < tanks.length; i++) {
+			Tank t = tanks[i];
+			if (tanks[i] == null) {
+				tanks[i] = new Tank(new Point(0,0), 2, -1, false);
+				continue;
+			}
+			for (int y2 = 0; y2 < tankSize; y2++) {
+				for (int x2 = 0; x2 < tankSize; x2++) {
+					map[t.getPosition().y+y2][t.getPosition().x+x2] = Unit.TANK1A+i;
+				}
+			}
+		}
+		for (int i = 0; i < bases.length; i++) {
+			if (bases[i] == null) {
+				bases[i] = new Base(new Point(0,0), 2, false);
+				continue;
+			}
+		}
+		GameState newGame = new GameState(map, bullets, tanks, bases, collisions, 0);
+		return newGame;
+	}
+	
+	/**
+	 * Match up the provided map with one of the Entelect maps.
+	 */
 	public static int identifyMapType(int[][] unknownMap) {
 		String[] maps = {
 			"mapE1.txt",
@@ -1664,7 +1714,7 @@ public class GameState {
 		};
 		
 		for (int i = 0; i < maps.length; i++) {
-			GameState gameState = Game.newGame(maps[i]);
+			GameState gameState = GameState.newGame(maps[i]);
 			int[][] map = gameState.getMap();			
 
 			int numEmptyOrWall = 0;

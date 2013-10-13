@@ -1,54 +1,67 @@
 package za.co.entelect.competition;
 
-import java.awt.Point;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 import za.co.entelect.competition.bots.Bot;
 
+/**
+ * The Game class runs a game using two players (two Bot objects) and a GameState.
+ * The interesting functions are the three different constructors, nextTick and generateResult.
+ */
 public class Game {
-
 	private Bot player1;
 	private Bot player2;
 	private GameState gameState;
 	protected za.co.entelect.challenge.Game[] eGame;
-	private boolean generateEGame;
 	private Result result;
 	
-	private long p1Time = 0;
-	private long p2Time = 0;
-	
-	public Game(Bot player1, Bot player2, GameState gameState, boolean generateEGame) {
+	/**
+	 * Create a new Game.
+	 * 
+	 * @param player1			Player 1's Bot object.
+	 * @param player2			Player 2's Bot object.
+	 * @param gameState			A GameState object to base the game on. 
+	 */
+	public Game(Bot player1, Bot player2, GameState gameState) {
 		super();
 		this.player1 = player1;
 		this.player2 = player2;
 		this.gameState = gameState;
-		this.generateEGame = generateEGame;
 	}
 	
-	public Game(String player1, String player2, String gameFile, boolean generateEGame) {
+	/**
+	 * Create a new Game.
+	 * 
+	 * @param player1			The fully qualified name of the Bot. Example: "za.co.entelect.competition.bots.BruteV2"
+	 * 							or "za.co.entelect.competition.bots.Random".
+	 * @param player2			Same as player1.
+	 * @param gameFile			The filename of the map. Maps are loaded from the assets folder.
+	 * 							Example: "mapE1.txt" for Entelect's first map.
+	 */
+	public Game(String player1, String player2, String gameFile) {
 		super();
-		init(player1, player2, generateEGame);
-		this.gameState = newGame(gameFile);
+		init(player1, player2);
+		this.gameState = GameState.newGame(gameFile);
 	}
 	
-	public Game(String player1, String player2, ArrayList<String> file, boolean generateEGame) {
+	/**
+	 * Create a new Game.
+	 * 
+	 * @param player1			The fully qualified name of the Bot. Example: "za.co.entelect.competition.bots.BruteV2"
+	 * 							or "za.co.entelect.competition.bots.Random".
+	 * @param player2			Same as player1.
+	 * @param file				A list of String objects, each a line from the map file. 
+	 * 							Example: "mapE1.txt" for Entelect's first map.
+	 */
+	public Game(String player1, String player2, ArrayList<String> file) {
 		super();
-		init(player1, player2, generateEGame);
-		this.gameState = newGame(file);
+		init(player1, player2);
+		this.gameState = GameState.newGame(file);
 	}
 	
-	public Game(String player1, String player2, GameState gameState, boolean generateEGame) {
-		super();
-		init(player1, player2, generateEGame);
-		this.gameState = gameState;
-	}
-	
-	private void init(String player1, String player2, boolean generateEGame) {
+	private void init(String player1, String player2) {
 		try {
 			Constructor<?> player1Constructor = Class.forName(player1).getConstructor(Integer.TYPE);
 			this.player1 = (Bot) player1Constructor.newInstance(0);
@@ -71,7 +84,6 @@ public class Game {
 			e.printStackTrace();
 		}
 
-		this.generateEGame = generateEGame;
 		this.result = new Result();
 	}
 	
@@ -102,17 +114,27 @@ public class Game {
 	public void setResult(Result result) {
 		this.result = result;
 	}
+	
+	/**
+	 * Advance the Game by one tick:
+	 * 	1. Tell player1 to generate moves.
+	 * 	2. Tell player2 to generate moves.
+	 * 	3. Possibly overwrite the moves.
+	 *	4. Advance the GameState object by calling gameState.nextTick().
+	 * 	
+	 * @param overrideActions	An int[4] containing actions (see GameAction) to overwrite the 
+	 * 							actions issues by the players. Set to null if not used, or set individual 
+	 * 							parts to -1 to not overwrite the corresponding bot's actions.
+	 * 							The order is: [P1 bot1, P1 bot2, P2 bot1, P2 bot2].
+	 * @param performedActions	An int[4] containing the actions (see GameAction) that were performed.
+	 * 							The order is: [P1 bot1, P1 bot2, P2 bot1, P2 bot2].
+	 * @param timeLimitMS		The number of milliseconds to give each player to generate their moves.
+	 * @return 					false if the game has ended.
+	 */
 	public boolean nextTick(int[] overrideActions, int[] performedActions, int timeLimitMS) {
-		long tempTime = System.nanoTime();
 		int[] p1Moves = player1.getActions(this.gameState, timeLimitMS);
-		p1Time += System.nanoTime() - tempTime;
 		
-		tempTime = System.nanoTime(); 
-		int[] p2Moves = player2.getActions(this.gameState, timeLimitMS);	
-		p2Time += System.nanoTime() - tempTime; 
-		
-		//System.out.println("Player 1 total time: " + Util.padRight((p1Time/1000000) + "ms", 8)
-		//		+ " Player 2 total time: " + Util.padRight((p2Time/1000000) + "ms", 8) + "scale: " + scale);
+		int[] p2Moves = player2.getActions(this.gameState, timeLimitMS);
 		
 		int[] actions = new int[4];
 		
@@ -139,13 +161,6 @@ public class Game {
 		
 		this.gameState.nextTick();
 		
-		if (this.generateEGame) {
-			this.eGame = null;
-			this.eGame = getEGame();
-			
-			this.resetEBoard();
-		}
-		
 		boolean isActive = this.gameState.isActive();
 		if (!isActive) {
 			generateResult(this.result);
@@ -153,9 +168,9 @@ public class Game {
 		return isActive;
 	}
 	
-	public void resetEBoard() {
-	}
-
+	/**
+	 * Store the game's result in the Result object.
+	 */
 	public void generateResult(Result result) {		
 		result.score.name[0] = this.getPlayer1().getName();
 		result.score.name[1] = this.getPlayer2().getName();
@@ -168,135 +183,5 @@ public class Game {
 		}
 		
 		result.score.numTicks = this.getGameState().getTickCount();
-	}
-	
-	public static ArrayList<String> readGameFromFile(String filename) {
-		Scanner in = null;
-		//File f = new File("./");
-		//System.out.println(f.getAbsolutePath());
-		try {
-			in = new Scanner(new File("./assets/"+filename));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		
-		ArrayList<String> file = new ArrayList<String>(); 
-		while (in.hasNext()) {
-			String line = in.nextLine();
-			file.add(line);
-		}
-		in.close();
-		
-		return file;
-	}
-	
-	public static GameState newGame(String filename) {		
-		return newGame(readGameFromFile(filename));
-	}
-	
-	public static GameState newGame(ArrayList<String> file) {		
-		int[][] map = new int[file.size()][file.get(0).length()];
-		Tank[] tanks = new Tank[4];
-		Base[] bases = new Base[2];
-		Bullet[] bullets = new Bullet[4];
-		for (int i = 0; i < bullets.length; i++) {
-			bullets[i] = new Bullet(new Point(0,0), 0, false);
-		}
-		ArrayList<Collision> collisions = new ArrayList<Collision>();
-		for (int y = 0; y < map.length; y++) {
-			for (int x = 0; x < map[0].length; x++) {
-				char c = file.get(y).charAt(x);
-				if (c == '_') {
-					map[y][x] = 0;
-				} else if (c == '#') {
-					map[y][x] = 1;
-				} else if (c == 'A') {
-					if (tanks[0] == null) {
-						tanks[0] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
-						x++;
-					} else {
-						map[y][x] = 0;
-					}
-				} else if (c == 'B') {
-					if (tanks[1] == null) {
-						tanks[1] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
-						x++;
-					} else {
-						map[y][x] = 0;
-					}
-				} else if (c == 'X') {
-					if (tanks[2] == null) {
-						tanks[2] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
-						x++;
-					} else {
-						map[y][x] = 0;
-					}
-				} else if (c == 'Y') {
-					if (tanks[3] == null) {
-						tanks[3] = new Tank(new Point(x,y), getRotationFromChar(file.get(y).charAt(x+1)), -1);
-						x++;
-					} else {
-						map[y][x] = 0;
-					}
-				} else if (c == 'C') {
-					bases[0] = new Base(new Point(x,y), 2);
-					map[y][x] = Unit.BASE1;
-				} else if (c == 'Z') {
-					bases[1] = new Base(new Point(x,y), 2);
-					map[y][x] = Unit.BASE2;
-				//} else if (c == '*') {
-				//	bullets[i] = new Bullet(new Point(x,y), 2);
-				} else if (c == '0') {
-					bullets[0] = new Bullet(new Point(x,y), 2);
-				} else if (c == '1') {
-					bullets[1] = new Bullet(new Point(x,y), 2);
-				} else if (c == '2') {
-					bullets[2] = new Bullet(new Point(x,y), 2);
-				} else if (c == '3') {
-					bullets[3] = new Bullet(new Point(x,y), 2);
-				} else if (c == '_') {
-					map[y][x] = 0;
-				} else {
-					System.err.println("UNKNOWN SYMBOL IN MAP.TXT: "+c);
-				}
-			}
-		}
-		for (int i = 0; i < tanks.length; i++) {
-			Tank t = tanks[i];
-			if (tanks[i] == null) {
-				tanks[i] = new Tank(new Point(0,0), 2, -1, false);
-				continue;
-			}
-			for (int y2 = 0; y2 < GameState.tankSize; y2++) {
-				for (int x2 = 0; x2 < GameState.tankSize; x2++) {
-					map[t.getPosition().y+y2][t.getPosition().x+x2] = Unit.TANK1A+i;
-				}
-			}
-		}
-		for (int i = 0; i < bases.length; i++) {
-			if (bases[i] == null) {
-				bases[i] = new Base(new Point(0,0), 2, false);
-				continue;
-			}
-		}
-		GameState newGame = new GameState(map, bullets, tanks, bases, collisions, 0);
-		//System.out.println("New map:");
-		//System.out.println(newGame.toString());
-		return newGame;
-	}
-	
-	private static int getRotationFromChar(char c) {
-		int rotation = 2;		
-		if (Character.isDigit(c)) {
-			int n = Character.getNumericValue(c);
-			if (n >= 0 && n <= 3) {
-				rotation = n;
-			}
-		}
-		return rotation;
-	}
-
-	public za.co.entelect.challenge.Game[] getEGame() {
-		return null;
 	}
 }

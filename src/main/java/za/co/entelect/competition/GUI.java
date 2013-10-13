@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.awt.*;
@@ -14,6 +15,27 @@ import java.awt.image.*;
 
 import javax.imageio.*;
 import javax.swing.*;
+
+/**
+ * The main class (GUI) plays and displays a game between two bots.
+ * The game is configured by the file configGUI.properties:
+ * 		player1:		The fully qualified name of any bot in the za.co.entelect.competition.bots package.
+ * 						Example: za.co.entelect.competition.bots.BruteV2 or za.co.entelect.competition.bots.Random.
+ * 		player2:		Same as player1.
+ * 		mapName:		The filename of the map. Maps are loaded from the assets folder.
+ * 						Example: "mapE1.txt" for Entelect's first map.
+ * 		useMoveList:	Load \assets\movelist.txt to overwrite any or all of any bot's actions. The movelist follows 
+ * 						the mapping used in the GameAction class. A bot will ignore all actions after an 'X' character. 						
+ * 						The order of actions is: P1 bot1, P1 bot2, P2 bot1, P2 bot2. The Simulator class can generate
+ * 						movelists based on certain conditions. The following example will make P1 bot1 move down, 
+ * 						P1 bot2 will not be overwritten, P2 bot1 will keep firing and P2 bot2 will do nothing:
+ * 
+ * 						v X F .
+ * 						v . F . 
+ * 						v . F .
+ * 						v . F .
+ * 						  
+ */
 
 class UserInput {
 	private Calendar timePressed;
@@ -410,6 +432,47 @@ public class GUI extends JApplet {
 		//GameState gameState = MapGenerator.generateRandom(80, 100, 60, 80, 5, 0.10, true, true, 1, 0, 92555845741342L); //50851925610806L);
 		//ArrayList<String> gameList = MapGenerator.generateRandom(80, 100, 80, 100, 5, 0.15, true, true, 1, 0, 92555845741342L).toStringList();
 		
+		Properties prop = new Properties();		
+		String propertiesFile = "configGUI.properties";
+		
+		String player1 = null;
+		String player2 = null;
+		String mapName = null;
+		boolean useMoveList = false;	
+		
+		try {
+			prop.load(new FileInputStream(propertiesFile));
+			if (prop.getProperty("player1") != null) {
+				player1 = prop.getProperty("player1");
+			}
+			if (prop.getProperty("player2") != null) {
+				player2 = prop.getProperty("player2");
+			}
+			if (prop.getProperty("mapName") != null) {
+				mapName = prop.getProperty("mapName");
+			}
+			if (prop.getProperty("useMoveList") != null) {
+				useMoveList = Boolean.parseBoolean(prop.getProperty("useMoveList"));
+			}
+		} catch (IOException ex) {
+			System.err.println("Could not read " + propertiesFile);
+		}
+		
+		if (player1 == null) {
+			player1 = "za.co.entelect.competition.bots.Random";
+		}
+		if (player2 == null) {
+			player2 = "za.co.entelect.competition.bots.Random";
+		}
+		if (mapName == null) {
+			mapName = "mapE0.txt";
+		}
+		
+		System.out.println("player1: " + player1);
+		System.out.println("player2: " + player2);
+		System.out.println("mapName: " + mapName);
+		System.out.println();
+		
 		mainGUI.game = new Game(
 							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Minimax",
@@ -417,12 +480,15 @@ public class GUI extends JApplet {
 							//"za.co.entelect.competition.bots.Endgame",
 							//"za.co.entelect.competition.bots.Random",
 							//"za.co.entelect.competition.bots.Brute",
-							"za.co.entelect.competition.bots.BruteV2",
+							//"za.co.entelect.competition.bots.BruteV2",
 							//"za.co.entelect.competition.bots.MCTS",
 							//"za.co.entelect.competition.bots.DoNothing",
-							"za.co.entelect.competition.bots.Random",
+							//"za.co.entelect.competition.bots.Random",
+							player1,
+							player2,
 							//"map.txt",
-							"mapE8.txt"
+							//"mapE8.txt"
+							mapName
 							//"mapBattle0.txt",
 							//gameState,
 							//gameList,
@@ -440,8 +506,11 @@ public class GUI extends JApplet {
 		f.pack();
 		f.setVisible(true);
 		
-		mainGUI.moveList = loadMoveList();
-		mainGUI.moveList = null;
+		if (useMoveList) {
+			mainGUI.moveList = loadMoveList();
+		} else {
+			mainGUI.moveList = null;
+		}
 		
 		mainGUI.setPreviousGameState(mainGUI.game.getGameState().clone());
 		mainGUI.setCurrentGameState(mainGUI.game.getGameState().clone());

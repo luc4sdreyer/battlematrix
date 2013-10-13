@@ -2,6 +2,9 @@ package za.co.entelect.competition;
 
 import java.awt.Point;
 
+/**
+ * Each unit in the game represented by a distinct integer.
+ */
 
 public abstract class Unit {
 	protected Point position;

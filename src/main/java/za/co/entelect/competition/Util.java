@@ -200,13 +200,6 @@ public class Util {
 
 		in.close();
 
-//		for (int i = 0; i < newZTable.length; i++) {
-//			for (int j = 0; j < newZTable[0].length; j++) {
-//				System.out.print(newZTable[i][j]+",");
-//			}
-//			System.out.println();
-//		}
-
 		return newZTable;
 	}
 	

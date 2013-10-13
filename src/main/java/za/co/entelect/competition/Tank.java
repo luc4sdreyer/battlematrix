@@ -2,7 +2,9 @@ package za.co.entelect.competition;
 
 import java.awt.Point;
 
-
+/**
+ * Represents the Tank unit.
+ */
 public class Tank extends Unit{
 	private int nextAction;
 	private Point prevPosition;

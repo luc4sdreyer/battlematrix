@@ -4,3 +4,5 @@ Thumbs.db
 assets/zobristTable.csv
 export/
 dependency-reduced-pom.xml
+lib/
+movelists/

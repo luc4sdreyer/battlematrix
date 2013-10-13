@@ -18,8 +18,9 @@ Dependencies
 Installation
 ------------
 
-```sh
-git clone 
+```
+git clone https://github.com/luc4sdreyer/battlematrix.git
+cd battlematrix
 compile.bat
 ```
 
@@ -27,15 +28,15 @@ Run
 ---
 
  * To configure the competition client, see \src\main\java\za\co\entelect\competition\App.java. To run the competition client:
-```sh
+```
 start.bat http://GameServerIP:GameServerPort
 ```
  * To configure the game visualizer, see \src\main\java\za\co\entelect\competition\GUI.java. To run the game visualizer:
-```sh
+```
 startGUI.bat
 ``` 
  * To configure the simulator, see \src\main\java\za\co\entelect\competition\Simulator.java. To run the simulator:
-```sh
+```
 startSimulator.bat
 ```
 

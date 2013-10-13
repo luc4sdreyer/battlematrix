@@ -1,4 +1,4 @@
-This is my entry for the 2013 Entelect R100K challenge: a programming competition where each contestant had to write an AI bot for a game that resembles the classic NES game Battle City. 
+This is my entry for the 2013 Entelect R100K challenge: a programming competition where each contestant had to write an AI bot for a game that resembles the classic Battle City on NES.
 
 This project can:
 
